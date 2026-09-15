@@ -226,7 +226,7 @@ def extract_body(html_text: str) -> Tuple[List[str], str]:
     except Exception:
         pass
     
-    body = "\n\n".join(p for p in parser.paragraphs if p.strip())
+    body = " ".join(p for p in parser.paragraphs if p.strip())
     
     return parser.headings, body
 
@@ -327,7 +327,7 @@ def normalize_paragraphs(text: str) -> str:
     text = unicodedata.normalize("NFKC", fix_characters(strip_html_tags(text)))
     paras = [WHITESPACE_RE.sub(" ", p).strip() for p in re.split(r"\n\s*\n", text)]
     
-    return "\n\n".join(p for p in paras if p)
+    return " ".join(p for p in paras if p)
 
 
 # ---------------------------------------------------------------------------

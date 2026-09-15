@@ -60,9 +60,9 @@ Proyek mata kuliah Pemrosesan Bahasa Alami: membangun pipeline NLP & analisis en
      > konflik, perang, ancaman, perdamaian, diplomasi, geopolitik, global, dunia, internasional, Amerika, United States, US, AS, China, Rusia, Ukraina, Timur Tengah, Iran, Palestina, Gaza, Rafah, Israel, persaingan, klaim, presiden, perdana menteri, ekspor, impor, perdagangan, pemerintah.
    - Nilai tukar rupiah:
      > rupiah, dolar AS, nilai tukar, kurs, ekonomi, perdagangan, keuangan, peningkatan, inflasi, mata uang, global, penguatan, menguat, pelemahan, melemah, suku bunga, pasar, ekspor, impor, devisa, valuta, bank, dana.
-2. Perhitungan nilai probabilitas keterkaitan tiap dokumen berita terhadap seluruh kosa kata dari keyword pada masing-masing topik.
+2. Perhitungan nilai probabilitas keterkaitan tiap dokumen berita terhadap seluruh kosa kata dari keyword pada masing-masing topik menggunakan TF-IDF
 3. Pemetaan skor probabilitas ke dalam ruang dua dimensi untuk mengukur tingkat kedekatan dengan kedua topik pembahasan.
-4. Pengelompokan (clustering) dokumen ke dalam 4 kategori:
+4. Pengelompokan (clustering) dokumen ke dalam 4 kategori menggunakan metode K-Means:
    - Kategori 1: Keterkaitan geopolitik tinggi dan nilai tukar tinggi.
    - Kategori 2: Keterkaitan geopolitik tinggi dan nilai tukar rendah.
    - Kategori 3: Keterkaitan geopolitik rendah dan nilai tukar tinggi.

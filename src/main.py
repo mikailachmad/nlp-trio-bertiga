@@ -1,9 +1,9 @@
 """Main program: integrasi cleaning -> filtering -> preprocessing.
 
 Contoh:
-    python main.py --demo
-    python main.py --stage all --input ../data/raw/news --output ../data/processed/news_final.json
-    python main.py --stage cleaning --input ../data/raw/news/artikel.html --output ../data/processed/news_clean.json
+python src/main.py --demo
+python src/main.py --stage all --input data/raw/news --output data/processed/news_final.json
+python src/main.py --stage cleaning --input data/raw/news/artikel.html --output data/processed/news_clean.json
 
 Format input yang didukung:
   - file .html tunggal (artikel mentah hasil scraping)
