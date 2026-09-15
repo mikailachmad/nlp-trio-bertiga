@@ -85,7 +85,7 @@ Proyek mata kuliah Pemrosesan Bahasa Alami: membangun pipeline NLP & analisis en
 | Strategi & fungsi temporal alignment               | 🟡 Desain selesai, implementasi penuh menunggu data berita | `src/temporal_alignment.py`, `docs/temporal_alignment_strategy.md`       |
 | Visualisasi tren kurs                              | ✅ Selesai                                                 | `src/visualize_jisdor.py`                                                |
 | Scraping data berita                               | 🔲 Belum dimulai                                           | —                                                                        |
-| Cleaning, filtering, dan preprocessing teks berita | 🔲 Belum dimulai                                           | —                                                                        |
+| Cleaning, filtering, dan preprocessing teks berita | 🟡 Kode program selesai, diperlukan testing lebih lanjut                                           | `src/cleaning/text_cleaning.py`, `src/filtering/text_filtering.py`, `src/preprocessing/text_preprocessing.py`, `src/main.py`                                                                         |
 | Laporan PDF                                        | 🟡 Outline dibuat, konten belum diisi                      | `report/`                                                                |
 
 **Legenda:** ✅ selesai · 🟡 sedang berjalan / sebagian · 🔲 belum dimulai
@@ -97,7 +97,19 @@ Proyek mata kuliah Pemrosesan Bahasa Alami: membangun pipeline NLP & analisis en
 
 ## Cara Menjalankan
 
-COMING SOON!
+1. Buat dan jalankan virtual environment python dengan menjalankan perintah berikut
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+2. Install dependencies dengan menjalankan perintah berikut
+```bash
+pip install -r requirements.txt
+```
+3. Jalankan program utama dengan perintah berikut:
+```bash
+python src/main.py --stage <cleaning, filtering, preprocessing, all> --input <input_path> --output <output_path>.json
+```
 
 > Catatan: script scraping & cleaning berita masih dalam pengerjaan tim,
 > akan ditambahkan cara menjalankannya begitu tersedia.
