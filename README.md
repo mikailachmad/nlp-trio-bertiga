@@ -81,9 +81,9 @@ Proyek mata kuliah Pemrosesan Bahasa Alami: membangun pipeline NLP & analisis en
 | Komponen                                           | Status                                                     | Keterangan                                                               |
 | -------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------ |
 | Data kurs USD (BI JISDOR, 2021–2026)               | ✅ Selesai                                                 | `data/raw/Informasi_Kurs_Jisdor.xlsx`, `data/processed/jisdor_clean.csv` |
-| Preprocessing data kurs                            | ✅ Selesai                                                 | `src/preprocess_jisdor.py`                                               |
-| Strategi & fungsi temporal alignment               | 🟡 Desain selesai, implementasi penuh menunggu data berita | `src/temporal_alignment.py`, `docs/temporal_alignment_strategy.md`       |
-| Visualisasi tren kurs                              | ✅ Selesai                                                 | `src/visualize_jisdor.py`                                                |
+| Preprocessing data kurs                            | ✅ Selesai                                                 | `src/jisdor/preprocess_jisdor.py`                                               |
+| Strategi & fungsi temporal alignment               | ✅ Selesai (siap dijalankan, support 3 timezone)        | `src/jisdor/temporal_alignment.py`, `docs/temporal_alignment_strategy.md`       |
+| Visualisasi tren kurs                              | ✅ Selesai (output PNG & HTML plotly)                      | `src/jisdor/visualize_jisdor.py`                                                |
 | Scraping data berita                               | 🔲 Belum dimulai                                           | —                                                                        |
 | Cleaning, filtering, dan preprocessing teks berita | 🟡 Kode program selesai, diperlukan testing lebih lanjut                                           | `src/cleaning/text_cleaning.py`, `src/filtering/text_filtering.py`, `src/preprocessing/text_preprocessing.py`, `src/main.py`                                                                         |
 | Laporan PDF                                        | 🟡 Outline dibuat, konten belum diisi                      | `report/`                                                                |
@@ -109,6 +109,14 @@ pip install -r requirements.txt
 3. Jalankan program utama dengan perintah berikut:
 ```bash
 python src/main.py --stage <cleaning, filtering, preprocessing, all> --input <input_path> --output <output_path>.json
+```
+4. Untuk preprocessing data JISDOR:
+```bash
+python -m src.jisdor.preprocess_jisdor
+```
+5. Untuk visualisasi tren JISDOR:
+```bash
+python -m src.jisdor.visualize_jisdor
 ```
 
 > Catatan: script scraping & cleaning berita masih dalam pengerjaan tim,
