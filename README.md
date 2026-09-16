@@ -41,6 +41,13 @@ Proyek mata kuliah Pemrosesan Bahasa Alami: membangun pipeline NLP & analisis en
 
 ### Data Scrapping
 
+Data berita diperoleh dari **CNBC** sebagai sumber utama. **Google News RSS** digunakan sebagai *article discovery* untuk menemukan artikel CNBC secara otomatis berdasarkan kata kunci terkait geopolitik, ekonomi, nilai tukar, serta rentang waktu penelitian. Hasil discovery kemudian digabungkan dan dilakukan deduplikasi untuk memperoleh daftar URL artikel.
+
+Setiap URL artikel selanjutnya diakses langsung dari CNBC menggunakan **HTTP request** dengan library `requests`. Halaman HTML diproses menggunakan **BeautifulSoup** untuk mengekstraksi isi berita, sedangkan metadata seperti judul dan tanggal publikasi diperoleh dari struktur **JSON-LD** (`<script type="application/ld+json">`). Data hasil scraping disimpan dalam dataset terstruktur yang mencakup URL, judul, tanggal publikasi, penulis, dan isi berita.
+
+**Pipeline:**
+`Google News RSS → Article Discovery → Deduplication → URL CNBC → HTTP Request → HTML/JSON-LD Parsing → Ekstraksi Data → Dataset Berita Mentah`
+
 ### Data Cleaning
 
 1. Ekstraksi Komponen Utama:
