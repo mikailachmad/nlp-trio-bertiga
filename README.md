@@ -91,7 +91,7 @@ Setiap URL artikel selanjutnya diakses langsung dari CNBC menggunakan **HTTP req
 | Preprocessing data kurs                            | ✅ Selesai                                                 | `src/jisdor/preprocess_jisdor.py`                                               |
 | Strategi & fungsi temporal alignment               | ✅ Selesai (siap dijalankan, support 3 timezone)        | `src/jisdor/temporal_alignment.py`, `docs/temporal_alignment_strategy.md`       |
 | Visualisasi tren kurs                              | ✅ Selesai (output PNG & HTML plotly)                      | `src/jisdor/visualize_jisdor.py`                                                |
-| Scraping data berita                               | 🔲 Belum dimulai                                           | —                                                                        |
+| Scraping data berita                               | 🟡 sebagian selesai                                           | `src/scrapping/Scrappings.ipynb`                                                                       |
 | Cleaning, filtering, dan preprocessing teks berita | 🟡 Kode program selesai, diperlukan testing lebih lanjut                                           | `src/cleaning/text_cleaning.py`, `src/filtering/text_filtering.py`, `src/preprocessing/text_preprocessing.py`, `src/main.py`                                                                         |
 | Laporan PDF                                        | 🟡 Outline dibuat, konten belum diisi                      | `report/`                                                                |
 
