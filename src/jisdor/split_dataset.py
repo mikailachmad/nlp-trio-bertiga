@@ -1,11 +1,16 @@
 """
 Pembagian dataset kronologis (Train / Validation / Test) untuk data kurs JISDOR.
 
+Split ini generik terhadap kolom target: bekerja sama baiknya untuk kolom
+``target`` (classification 3-class) maupun ``kurs_besok`` (regresi), karena
+keduanya dibuat dari shift(-1) yang sama di target_formulation.py.
+
 Keputusan desain:
   - Split kronologis 80/10/10 berdasarkan urutan tanggal, tanpa shuffle.
   - Embargo: baris terakhir Train dan Val di-drop. Target dibuat dengan
-    shift(-1) di target_formulation.py, sehingga label baris terakhir tiap
-    split dihitung dari harga hari pertama split berikutnya (boundary leakage).
+    shift(-1) di target_formulation.py, sehingga label/nilai baris terakhir
+    tiap split dihitung dari harga hari pertama split berikutnya (boundary
+    leakage).
   - Cross-validation hanya di dalam Train: TimeSeriesSplit 10-fold
     (expanding window) dengan gap=1 untuk alasan leakage yang sama.
     Val dipakai untuk pemilihan model akhir, Test hanya disentuh sekali.
@@ -45,6 +50,7 @@ DEFAULT_OUTDIR = _REPO_ROOT / "data" / "split"
 
 COL_DATE = "tanggal"
 COL_TARGET = "target"
+COL_TARGET_REGRESI = "kurs_besok"
 
 TRAIN_RATIO = 0.8
 VAL_RATIO = 0.1
@@ -123,10 +129,17 @@ def get_cv_splitter(n_splits: int = N_SPLITS, gap: int = EMBARGO) -> TimeSeriesS
 
 def _summarize(name: str, df: pd.DataFrame) -> str:
     dist = (df[COL_TARGET].value_counts(normalize=True) * 100).round(1).to_dict()
-    return (
+    line = (
         f"{name:<5} {len(df):>4} baris | "
         f"{df[COL_DATE].min().date()} -> {df[COL_DATE].max().date()} | {dist}"
     )
+    if COL_TARGET_REGRESI in df.columns:
+        line += (
+            f" | {COL_TARGET_REGRESI}: min={df[COL_TARGET_REGRESI].min():.0f}, "
+            f"mean={df[COL_TARGET_REGRESI].mean():.0f}, "
+            f"max={df[COL_TARGET_REGRESI].max():.0f}"
+        )
+    return line
 
 
 # CLI

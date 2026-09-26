@@ -57,10 +57,7 @@ COL_TARGET = "target"
 LABEL_ORDER = ["NAIK", "STABIL", "TURUN"]
 
 
-# ---------------------------------------------------------------------------
 # Strategi Prediksi
-# ---------------------------------------------------------------------------
-
 def predict_persistence(targets: pd.Series) -> np.ndarray:
     """
     Persistence of Direction: prediksi arah besok = arah hari ini.
@@ -104,11 +101,7 @@ def predict_majority(targets_train: pd.Series, n: int) -> np.ndarray:
     majority = targets_train.mode().iloc[0]
     return np.full(n, majority)
 
-
-# ---------------------------------------------------------------------------
 # Evaluasi
-# ---------------------------------------------------------------------------
-
 def evaluate_baseline(
     y_true: np.ndarray,
     y_pred: np.ndarray,
@@ -162,7 +155,7 @@ def print_evaluation(result: Dict, split_name: str = "Test") -> None:
     print(f"{'='*60}")
     print(f"  Accuracy           : {result['accuracy']:.4f}")
     print(f"  Macro F1-Score     : {result['macro_f1']:.4f}")
-    print(f"{'─'*60}")
+    print(f"{'-'*60}")
     print("  Classification Report:")
     report = result["classification_report"]
     print(f"  {'Kelas':<10} {'Precision':>10} {'Recall':>10} {'F1':>10} {'Support':>10}")
@@ -173,7 +166,7 @@ def print_evaluation(result: Dict, split_name: str = "Test") -> None:
                 f"  {label:<10} {r['precision']:>10.4f} {r['recall']:>10.4f} "
                 f"{r['f1-score']:>10.4f} {r['support']:>10.0f}"
             )
-    print(f"{'─'*60}")
+    print(f"{'-'*60}")
     print("  Confusion Matrix (baris=aktual, kolom=prediksi):")
     print(f"  {'':>10}", end="")
     for label in LABEL_ORDER:
@@ -187,11 +180,7 @@ def print_evaluation(result: Dict, split_name: str = "Test") -> None:
         print()
     print(f"{'='*60}\n")
 
-
-# ---------------------------------------------------------------------------
 # CLI
-# ---------------------------------------------------------------------------
-
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Naive Baseline: evaluasi Persistence & Majority-Class pada data kurs JISDOR."

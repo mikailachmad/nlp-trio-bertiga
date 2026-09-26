@@ -18,7 +18,7 @@ Proyek mata kuliah Pemrosesan Bahasa Alami: membangun pipeline NLP & analisis en
 │   ├── raw/                        # data mentah (sebelum dibersihkan)
 │   ├── processed/                  # data yang sudah dibersihkan & diselaraskan
 │   │   ├── jisdor_clean.csv        # kurs JISDOR bersih
-│   │   └── jisdor_target.csv       # kurs + target 3-class (NAIK/STABIL/TURUN)
+│   │   └── jisdor_target.csv       # kurs + target 3-class (NAIK/STABIL/TURUN) + kurs_besok (regresi)
 │   └── split/                      # data yang sudah dibagi kronologis
 │       ├── train.csv               # 80% data awal (2021-09 → 2025-08)
 │       ├── val.csv                 # 10% berikutnya (2025-08 → 2026-02)
@@ -26,27 +26,31 @@ Proyek mata kuliah Pemrosesan Bahasa Alami: membangun pipeline NLP & analisis en
 ├── src/
 │   ├── jisdor/
 │   │   ├── preprocess_jisdor.py    # cleaning data kurs JISDOR
-│   │   ├── target_formulation.py   # formulasi target 3-class
+│   │   ├── target_formulation.py   # formulasi target 3-class + regresi (kurs_besok)
 │   │   ├── split_dataset.py        # split kronologis Train/Val/Test
 │   │   ├── temporal_alignment.py   # fungsi penyelarasan berita <-> trading day
 │   │   └── visualize_jisdor.py     # visualisasi tren kurs
 │   ├── models/
-│   │   └── naive_baseline.py       # Naive Baseline (Persistence & Majority-Class)
+│   │   ├── naive_baseline.py             # Naive Baseline classification (Persistence & Majority-Class)
+│   │   └── naive_baseline_regression.py  # Naive Baseline regresi (Persistence / Random Walk)
 │   ├── scrapping/
-│   │   └── news_scraper.py         # [TODO] scraping berita GDELT
+│   │   └── news_scraper.py         # [TODO] scraping berita GDELT (kerja aktual di Scrappings.ipynb)
 │   ├── cleaning/
-│   │   └── text_cleaning.py        # [TODO] cleaning teks berita
+│   │   └── text_cleaning.py        # cleaning teks berita
 │   ├── filtering/
-│   │   └── text_filtering.py       # [TODO] filtering teks berita
+│   │   └── text_filtering.py       # filtering teks berita (TF-IDF + K-Means relevansi)
 │   ├── preprocessing/
-│   │   └── text_preprocessing.py   # [TODO] preprocessing teks berita
-│   └── main.py                     # [TODO] inisisasi sistem
+│   │   └── text_preprocessing.py   # preprocessing teks berita
+│   └── main.py                     # CLI entrypoint (--stage cleaning/filtering/preprocessing/all)
 ├── notebook/
-│   └── naive_baseline_experiment.ipynb  # EDA & eksperimen Naive Baseline
+│   ├── naive_baseline_experiment.ipynb             # EDA & eksperimen Naive Baseline classification
+│   └── naive_baseline_regression_experiment.ipynb  # EDA & eksperimen Naive Baseline regresi
 ├── results/
-│   └── naive_baseline_results.json # hasil evaluasi Naive Baseline
+│   ├── naive_baseline_results.json             # hasil evaluasi Naive Baseline classification
+│   └── naive_baseline_regression_results.json  # hasil evaluasi Naive Baseline regresi
 ├── docs/
-│   └── temporal_alignment_strategy.md   # penjelasan aturan penyelarasan
+│   ├── temporal_alignment_strategy.md   # penjelasan aturan penyelarasan
+│   └── target_formulation.md            # alasan formulasi target classification & regresi
 ├── report/                        # laporan PDF (outline sudah dibuat)
 └── README.md
 ```
@@ -106,44 +110,54 @@ Setiap URL artikel selanjutnya diakses langsung dari CNBC menggunakan **HTTP req
 | Strategi & fungsi temporal alignment               | ✅ Selesai (siap dijalankan, support 3 timezone)        | `src/jisdor/temporal_alignment.py`, `docs/temporal_alignment_strategy.md`       |
 | Visualisasi tren kurs                              | ✅ Selesai (output PNG & HTML plotly)                      | `src/jisdor/visualize_jisdor.py`                                                |
 | Scraping data berita                               | 🟡 sebagian selesai                                           | `src/scrapping/Scrappings.ipynb`                                                                       |
-| Cleaning, filtering, dan preprocessing teks berita | 🟡 Kode program selesai, diperlukan testing lebih lanjut                                           | `src/cleaning/text_cleaning.py`, `src/filtering/text_filtering.py`, `src/preprocessing/text_preprocessing.py`, `src/main.py`                                                                         |
+| Cleaning, filtering, dan preprocessing teks berita | ✅ Selesai (revisi terbaru dari tim)                           | `src/cleaning/text_cleaning.py`, `src/filtering/text_filtering.py`, `src/preprocessing/text_preprocessing.py`, `src/main.py`                                                                         |
 | Laporan PDF                                        | 🟡 Outline dibuat, konten belum diisi                      | `report/`                                                                |
 
 ## Status Progress — Tugas 2
 
 | Komponen                                                        | Status       | Keterangan                                                                                                       |
 | --------------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------- |
-| Formulasi target variabel (3-class: NAIK/STABIL/TURUN)          | ✅ Selesai   | `src/jisdor/target_formulation.py`, output: `data/processed/jisdor_target.csv`                                   |
-| Desain train/val/test split kronologis (80/10/10)                | ✅ Selesai   | `src/jisdor/split_dataset.py`, output: `data/split/{train,val,test}.csv`                                         |
-| Naive Baseline (Persistence of Direction & Majority-Class)       | ✅ Selesai   | `src/models/naive_baseline.py`, notebook: `notebook/naive_baseline_experiment.ipynb`                              |
-| Strategi ekstraksi fitur NLP (sentimen, TF-IDF)                 | 🔲 Belum     | Butir 1a–1c tugas 2                                                                                              |
+| Formulasi target variabel — classification (3-class: NAIK/STABIL/TURUN) | ✅ Selesai   | `src/jisdor/target_formulation.py`, output: `data/processed/jisdor_target.csv`                                   |
+| Formulasi target variabel — regresi (`kurs_besok`)              | ✅ Selesai   | `src/jisdor/target_formulation.py`, `docs/target_formulation.md`                                                 |
+| Desain train/val/test split kronologis (80/10/10)                | ✅ Selesai   | `src/jisdor/split_dataset.py`, output: `data/split/{train,val,test}.csv` (membawa kedua target sekaligus)         |
+| Naive Baseline classification (Persistence of Direction & Majority-Class) | ✅ Selesai   | `src/models/naive_baseline.py`, notebook: `notebook/naive_baseline_experiment.ipynb`                              |
+| Naive Baseline regresi (Persistence / Random Walk)               | ✅ Selesai   | `src/models/naive_baseline_regression.py`, notebook: `notebook/naive_baseline_regression_experiment.ipynb`       |
+| Strategi ekstraksi fitur NLP (sentimen Loughran-McDonald, TF-IDF) | 🔲 Belum     | Butir 1a–1c tugas 2                                                                                              |
 | Model baseline time-series (ARIMA / XGBoost)                    | 🔲 Belum     | Butir 2b tugas 2                                                                                                 |
 | Model gabungan awal (time-series + fitur NLP)                   | 🔲 Belum     | Butir 2c tugas 2                                                                                                 |
-| Metrik evaluasi & analisis perbandingan                         | 🟡 Sebagian  | Naive baseline sudah dievaluasi; model lain belum                                                                |
+| Metrik evaluasi & analisis perbandingan                         | 🟡 Sebagian  | Naive baseline (classification & regresi) sudah dievaluasi; model lain belum                                    |
 | Laporan PDF Tugas 2                                             | 🔲 Belum     |                                                                                                                  |
 
 ### Detail Formulasi Target Variabel
 
+Dua formulasi target dibangun sekaligus dari sumber yang sama — lihat `docs/target_formulation.md` untuk alasan lengkap.
+
+**1. Classification (kolom `target`)**
 - **Keputusan**: Klasifikasi **3-class** (NAIK / STABIL / TURUN), bukan biner.
 - **Threshold**: ±0.1% pada `pct_change` harian.
   - `pct_change > +0.1%` → NAIK
   - `pct_change < -0.1%` → TURUN
   - Sisanya → STABIL
 - **Alasan**: Tanpa kelas STABIL, ~30% hari trading akan di-drop karena perubahan kurs terlalu kecil (mendekati nol). Threshold 0.1% tervalidasi empiris dari statistik deskriptif data (std ≈ 0.33%, mean ≈ 0.019%).
-- **Target shift**: Fitur hari t dipasangkan ke label hari t+1 (prediksi *besok*), bukan label hari t sendiri.
+
+**2. Regresi (kolom `kurs_besok`)**
+- **Keputusan**: Nilai mentah `kurs_jisdor` hari berikutnya ("Nilai Penutupan Hari Berikutnya" sesuai spesifikasi tugas).
+- **Alasan kedua formulasi dipertahankan**: classification menangkap arah, regresi menangkap magnitude — tim ingin membandingkan keduanya, dan spesifikasi tugas mengizinkan salah satu atau keduanya.
+
+Keduanya pakai mekanisme sama: fitur hari t dipasangkan ke label/nilai hari t+1 (**shift(-1)**, prediksi *besok*), bukan hari t sendiri.
 
 ### Detail Split Kronologis
 
-| Split | Baris | Rentang Tanggal           | NAIK  | STABIL | TURUN |
-|-------|-------|---------------------------|-------|--------|-------|
-| Train | 959   | 2021-09-01 → 2025-08-26   | 380   | 283    | 296   |
-| Val   | 119   | 2025-08-28 → 2026-02-19   | 43    | 47     | 29    |
-| Test  | 121   | 2026-02-23 → 2026-08-31   | 54    | 31     | 36    |
+| Split | Baris | Rentang Tanggal           | NAIK  | STABIL | TURUN | `kurs_besok` (min–mean–max) |
+|-------|-------|---------------------------|-------|--------|-------|------------------------------|
+| Train | 959   | 2021-09-01 → 2025-08-26   | 380   | 283    | 296   | 14080 – 15394 – 16943        |
+| Val   | 119   | 2025-08-28 → 2026-02-19   | 43    | 47     | 29    | 16348 – 16686 – 16981        |
+| Test  | 121   | 2026-02-23 → 2026-08-31   | 54    | 31     | 36    | 16758 – 17569 – 18171        |
 
-- Embargo: 1 baris di-drop di ujung Train dan Val untuk mencegah *boundary leakage* akibat shift target.
+- Embargo: 1 baris di-drop di ujung Train dan Val untuk mencegah *boundary leakage* akibat shift target (berlaku untuk kedua target sekaligus, karena NaN di baris yang sama).
 - Cross-validation: TimeSeriesSplit 10-fold (expanding window) dengan gap=1, hanya di dalam Train.
 
-### Hasil Naive Baseline
+### Hasil Naive Baseline — Classification
 
 | Strategi                 | Split | Accuracy | Macro F1 |
 |--------------------------|-------|----------|----------|
@@ -153,6 +167,15 @@ Setiap URL artikel selanjutnya diakses langsung dari CNBC menggunakan **HTTP req
 | Majority-Class (NAIK)    | Test  | 44.63%   | 20.57%   |
 
 **Lower bound**: Model selanjutnya (ARIMA, XGBoost, model gabungan NLP) harus menghasilkan **Macro F1 > 36.37%** agar dianggap memberikan nilai tambah di atas naive baseline.
+
+### Hasil Naive Baseline — Regresi
+
+| Strategi                  | Split | RMSE    | MAE     |
+|----------------------------|-------|---------|---------|
+| Persistence (Random Walk) | Val   | 37.51   | 28.53   |
+| Persistence (Random Walk) | Test  | 57.47   | 43.60   |
+
+**Lower bound**: Model selanjutnya harus menghasilkan **RMSE < 57.47** (Test) agar dianggap memberikan nilai tambah di atas random-walk baseline.
 
 **Legenda:** ✅ selesai · 🟡 sedang berjalan / sebagian · 🔲 belum dimulai
 
@@ -188,11 +211,15 @@ python -m src.jisdor.target_formulation
 ```bash
 python -m src.jisdor.split_dataset
 ```
-7. Untuk evaluasi Naive Baseline:
+7. Untuk evaluasi Naive Baseline classification:
 ```bash
 python -m src.models.naive_baseline
 ```
-8. Untuk visualisasi tren JISDOR:
+8. Untuk evaluasi Naive Baseline regresi:
+```bash
+python -m src.models.naive_baseline_regression
+```
+9. Untuk visualisasi tren JISDOR:
 ```bash
 python -m src.jisdor.visualize_jisdor
 ```

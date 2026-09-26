@@ -1,13 +1,18 @@
 """
-Formulasi target variabel untuk prediksi arah kurs USD/IDR (JISDOR).
+Formulasi target variabel untuk prediksi kurs USD/IDR (JISDOR).
 
-Keputusan (lihat docs/target_formulation.md untuk alasan lengkap):
-  - Klasifikasi 3-class: NAIK / STABIL / TURUN (bukan biner).
-  - Threshold +-0.1% pada pct_change harian, tervalidasi empiris dari
-    data/processed/jisdor_clean.csv (1201 hari): tanpa kelas STABIL, 30.1%
-    hari akan ke-drop karena pct_change terlalu dekat nol.
-  - Target diprediksi untuk *besok* (shift -1): fitur hari t dipasangkan ke
-    label pct_change hari t+1, bukan label hari t sendiri.
+Dua formulasi target dibangun sekaligus dari sumber yang sama (lihat
+docs/target_formulation.md untuk alasan lengkap):
+  - Klasifikasi 3-class (kolom ``target``): NAIK / STABIL / TURUN (bukan
+    biner). Threshold +-0.1% pada pct_change harian, tervalidasi empiris
+    dari data/processed/jisdor_clean.csv (1201 hari): tanpa kelas STABIL,
+    30.1% hari akan ke-drop karena pct_change terlalu dekat nol.
+  - Regresi (kolom ``kurs_besok``): nilai kurs mentah hari berikutnya,
+    mengikuti definisi "Nilai Penutupan Hari Berikutnya" di spesifikasi
+    tugas. Dipakai untuk baseline regresi terpisah dari classification.
+
+Keduanya diprediksi untuk *besok* (shift -1): fitur hari t dipasangkan ke
+label/nilai hari t+1, bukan hari t sendiri.
 
 Cara pakai:
   from src.jisdor.target_formulation import build_target
@@ -40,6 +45,7 @@ COL_DATE = "tanggal"
 COL_RATE = "kurs_jisdor"
 COL_PCT_CHANGE = "pct_change"
 COL_TARGET = "target"
+COL_TARGET_REGRESI = "kurs_besok"
 
 # Threshold pct_change (%) yang memisahkan NAIK/TURUN dari STABIL.
 # Tervalidasi empiris: std. deviasi pct_change harian ~0.33%, rata-rata 0.019%.
@@ -74,7 +80,8 @@ def label_direction(pct_change: float, threshold: float = THRESHOLD_PCT) -> Opti
 def build_target(df: pd.DataFrame, threshold: float = THRESHOLD_PCT) -> pd.DataFrame:
     """
     Hitung ``pct_change``, label 3-class hari ini, lalu shift jadi target
-    prediksi "besok" (fitur hari t -> label hari t+1).
+    prediksi "besok" (fitur hari t -> label/nilai hari t+1). Sekaligus
+    menyiapkan target regresi ``kurs_besok`` dari kolom mentah yang sama.
 
     Parameters
     ----------
@@ -92,14 +99,17 @@ def build_target(df: pd.DataFrame, threshold: float = THRESHOLD_PCT) -> pd.DataF
         - ``pct_change``: perubahan kurs harian (%) hari itu.
         - ``target``: label 3-class untuk prediksi *besok*
           (``df["target"]`` hari t = arah pergerakan kurs hari t+1).
-        Baris terakhir (tidak punya "besok") di-drop karena targetnya NaN.
+        - ``kurs_besok``: nilai ``kurs_jisdor`` hari t+1 (target regresi).
+        Baris terakhir (tidak punya "besok") di-drop karena kedua target
+        NaN di baris yang sama.
     """
     df = df.copy()
 
     df[COL_PCT_CHANGE] = df[COL_RATE].pct_change() * 100
     label_besok = df[COL_PCT_CHANGE].apply(lambda x: label_direction(x, threshold)).shift(-1)
     df[COL_TARGET] = label_besok
-    df = df.dropna(subset=[COL_TARGET]).reset_index(drop=True)
+    df[COL_TARGET_REGRESI] = df[COL_RATE].shift(-1)
+    df = df.dropna(subset=[COL_TARGET, COL_TARGET_REGRESI]).reset_index(drop=True)
 
     return df
 
@@ -145,7 +155,13 @@ def main(argv: List[str] | None = None) -> int:
     df_target = build_target(df, threshold=args.threshold)
 
     print(f"[target_formulation] {len(df_target)} baris dengan target (threshold={args.threshold}%).")
-    print(f"[target_formulation] Distribusi target:\n{df_target[COL_TARGET].value_counts()}")
+    print(f"[target_formulation] Distribusi target (classification):\n{df_target[COL_TARGET].value_counts()}")
+    print(
+        f"[target_formulation] Target regresi ({COL_TARGET_REGRESI}): "
+        f"min={df_target[COL_TARGET_REGRESI].min():.0f}, "
+        f"mean={df_target[COL_TARGET_REGRESI].mean():.0f}, "
+        f"max={df_target[COL_TARGET_REGRESI].max():.0f}"
+    )
 
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)

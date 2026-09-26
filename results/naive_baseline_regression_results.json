@@ -1,0 +1,16 @@
+{
+  "val": {
+    "persistence": {
+      "strategy": "Persistence (Random Walk)",
+      "rmse": 37.5053,
+      "mae": 28.5294
+    }
+  },
+  "test": {
+    "persistence": {
+      "strategy": "Persistence (Random Walk)",
+      "rmse": 57.4694,
+      "mae": 43.595
+    }
+  }
+}
