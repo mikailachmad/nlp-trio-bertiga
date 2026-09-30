@@ -134,11 +134,7 @@ menyediakan varian alternatif dengan output `title_clean`/`body_clean` (VADER) d
 | Strategi & fungsi temporal alignment               | ✅ Selesai (siap dijalankan, support 3 timezone) | `src/jisdor/temporal_alignment.py`, `docs/temporal_alignment_strategy.md`                                                    |
 | Visualisasi tren kurs                              | ✅ Selesai (output PNG & HTML plotly)            | `src/jisdor/visualize_jisdor.py`                                                                                             |
 | Scraping data berita                               | 🟡 sebagian selesai                              | `src/scrapping/Scrappings.ipynb`                                                                                             |
-<<<<<<< HEAD
-| Cleaning, filtering, dan preprocessing teks berita | ✅ Selesai (revisi terbaru dari tim)             | `src/cleaning/text_cleaning.py`, `src/filtering/text_filtering.py`, `src/preprocessing/text_preprocessing.py`, `src/main.py` |
-=======
 | Cleaning, filtering, dan preprocessing teks berita | ✅ Selesai (revisi terbaru dari tim)             | `src/main.ipynb` + `src/filtering/text_filtering.py`, `src/preprocessing/text_preprocessing.py` → `data/processed/news_preprocessed.csv` |
->>>>>>> b1171f89d0f483435d89d57585c93bafef88e015
 | Laporan PDF                                        | 🟡 Outline dibuat, konten belum diisi            | `report/`                                                                                                                    |
 
 ## Status Progress — Tugas 2
@@ -170,17 +166,10 @@ Dua formulasi target dibangun sekaligus dari sumber yang sama — lihat `docs/ta
 - **Alasan**: Tanpa kelas STABIL, ~30% hari trading akan di-drop karena perubahan kurs terlalu kecil (mendekati nol). Threshold 0.1% tervalidasi empiris dari statistik deskriptif data (std ≈ 0.33%, mean ≈ 0.019%).
 
 **2. Regresi (kolom `kurs_besok`)**
-<<<<<<< HEAD
-
-- **Keputusan**: Nilai mentah `kurs_jisdor` hari berikutnya.
-- **Alasan kedua formulasi dipertahankan**: classification menangkap arah, regresi menangkap magnitude dan dibandingkan.
-
-=======
 
 - **Keputusan**: Nilai mentah `kurs_jisdor` hari berikutnya ("Nilai Penutupan Hari Berikutnya" sesuai spesifikasi tugas).
 - **Alasan kedua formulasi dipertahankan**: classification menangkap arah, regresi menangkap magnitude — tim ingin membandingkan keduanya, dan spesifikasi tugas mengizinkan salah satu atau keduanya.
 
->>>>>>> b1171f89d0f483435d89d57585c93bafef88e015
 Keduanya pakai mekanisme sama: fitur hari t dipasangkan ke label/nilai hari t+1 (**shift(-1)**, prediksi _besok_), bukan hari t sendiri.
 
 ### Detail Split Kronologis
@@ -226,7 +215,6 @@ Keduanya pakai mekanisme sama: fitur hari t dipasangkan ke label/nilai hari t+1 
 ## Cara Menjalankan
 
 1. Buat dan jalankan virtual environment python dengan menjalankan perintah berikut
-<<<<<<< HEAD
 
 ```bash
 python3 -m venv .venv
@@ -239,7 +227,9 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. Jalankan program utama dengan perintah berikut:
+3. Jalankan pipeline berita revisi via `src/main.ipynb`
+   (scrape HTML → cleaning → `filter_news` → `preprocess_documents` → `data/processed/news_preprocessed.csv`),
+   atau via CLI legacy:
 
 ```bash
 python src/main.py --stage <cleaning, filtering, preprocessing, all> --input <input_path> --output <output_path>.json
@@ -280,46 +270,6 @@ python -m src.models.naive_baseline_regression
 ```bash
 python -m src.jisdor.visualize_jisdor
 ```
-=======
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-2. Install dependencies dengan menjalankan perintah berikut
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Jalankan pipeline berita revisi via `src/main.ipynb`
-   (scrape HTML → cleaning → `filter_news` → `preprocess_documents` → `data/processed/news_preprocessed.csv`),
-   atau via CLI legacy:
-   ```bash
-   python src/main.py --stage <cleaning, filtering, preprocessing, all> --input <input_path> --output <output_path>.json
-   ```
-4. Untuk preprocessing data JISDOR:
-   ```bash
-   python -m src.jisdor.preprocess_jisdor
-   ```
-5. Untuk formulasi target variabel:
-   ```bash
-   python -m src.jisdor.target_formulation
-   ```
-6. Untuk split dataset kronologis:
-   ```bash
-   python -m src.jisdor.split_dataset
-   ```
-7. Untuk evaluasi Naive Baseline classification:
-   ```bash
-   python -m src.models.naive_baseline
-   ```
-8. Untuk evaluasi Naive Baseline regresi:
-   ```bash
-   python -m src.models.naive_baseline_regression
-   ```
-9. Untuk visualisasi tren JISDOR:
-   ```bash
-   python -m src.jisdor.visualize_jisdor
-   ```
->>>>>>> b1171f89d0f483435d89d57585c93bafef88e015
 
 > Catatan: `src/main.py` dipertahankan sebagai CLI legacy untuk pipeline berita
 > (tahap cleaning/filtering/preprocessing/all). Alur kerja aktual ada di `src/main.ipynb`.
