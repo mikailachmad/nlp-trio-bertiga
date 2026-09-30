@@ -88,3 +88,6 @@ scipy==1.18.1
 holidays
 vaderSentiment
 pysentiment2
+xgboost
+nbformat
+nbclient
