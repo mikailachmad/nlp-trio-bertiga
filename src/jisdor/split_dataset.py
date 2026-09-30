@@ -64,6 +64,7 @@ def chronological_split(
     train_ratio: float = TRAIN_RATIO,
     val_ratio: float = VAL_RATIO,
     embargo: int = EMBARGO,
+    date_col: str = COL_DATE,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Bagi DataFrame secara kronologis jadi Train, Val, dan Test.
@@ -72,13 +73,18 @@ def chronological_split(
     ----------
     df : pd.DataFrame
         DataFrame hasil :func:`src.jisdor.target_formulation.build_target`,
-        dengan kolom ``tanggal`` (datetime64).
+        dengan kolom tanggal (datetime64).
     train_ratio : float
         Proporsi Train dari total baris (default 0.8).
     val_ratio : float
         Proporsi Val dari total baris (default 0.1). Sisanya jadi Test.
     embargo : int
         Jumlah baris yang di-drop di ujung Train dan Val (default 1).
+    date_col : str
+        Nama kolom tanggal untuk pengurutan kronologis (default ``"tanggal"``).
+        Dipakai agar fungsi ini bisa direuse untuk dataset lain (mis. dataset
+        gabungan kurs+berita yang memakai nama kolom ``"date"``) tanpa perlu
+        rename kolom terlebih dulu.
 
     Returns
     -------
@@ -91,7 +97,7 @@ def chronological_split(
             f"Keduanya harus > 0 dan jumlahnya < 1."
         )
 
-    df = df.sort_values(COL_DATE).reset_index(drop=True)
+    df = df.sort_values(date_col).reset_index(drop=True)
     n = len(df)
     train_end = int(n * train_ratio)
     val_end = int(n * (train_ratio + val_ratio))
