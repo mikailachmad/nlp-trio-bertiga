@@ -21,3 +21,12 @@ Nilai mentah `kurs_jisdor` hari berikutnya
 Kedua target dihitung dengan `shift(-1)` di fungsi yang sama (`build_target()`): fitur hari t dipasangkan ke label/nilai hari t+1, bukan hari t sendiri. Baris terakhir didrop untuk keduanya sekaligus, karena NaN di baris yang sama.
 
 Karena `src/jisdor/split_dataset.py` men-split berdasarkan tanggal (bukan isi kolom target), satu kali split kronologis 80/10/10 menghasilkan `train.csv` / `val.csv` / `test.csv` yang membawa kolom `target` dan `kurs_besok` sekaligus, tidak perlu split terpisah untuk tiap formulasi. Lihat `docs/temporal_alignment_strategy.md` untuk aturan penyelarasan tanggal, dan docstring `src/jisdor/split_dataset.py` untuk alasan embargo satu baris di titik potong Train/Val (mencegah boundary leakage dari `shift(-1)`).
+
+## Syarat validitas perbandingan dengan Model Gabungan (kurs + NLP)
+
+Lower bound yaitu Macro-F1 Test > 0.3637, RMSE Test < 57.4694 dihitung pada Test period baseline ini secara spesifik: **2026-02-23 s.d. 2026-08-31**, memakai seluruh 5 tahun riwayat kurs (2021-09-01 dst.) untuk Train.
+
+Ketika Model Baseline Time-Series dibandingkan dengan Model Gabungan berita+kurs , klaim mengalahkan baseline hanya valid kalau **kedua model dievaluasi pada Test set yang sama** (tanggal sama, jumlah baris sama). Kalau pipeline gabungan memakai rasio atau rentang tanggal berbeda maka salah satu dari ini perlu dilakukan sebelum klaim mengalahkan baseline dianggap sah:
+
+- pipeline gabungan memakai `chronological_split()` dari `src/jisdor/split_dataset.py` (rasio & titik potong sama), atau
+- baseline ini dihitung ulang khusus pada rentang tanggal yang dipakai pipeline gabungan, dan lower boundnya diperbarui sesuai itu.
