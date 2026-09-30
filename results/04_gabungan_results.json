@@ -1,0 +1,167 @@
+{
+  "model": "XGBoost Gabungan (TS+NLP)",
+  "features": {
+    "ts": [
+      "ret_lag1",
+      "ret_lag2",
+      "ret_lag3",
+      "ret_std5"
+    ],
+    "lexicon": [
+      "vader_title_mean",
+      "vader_body_mean",
+      "vader_body_min",
+      "vader_neg_share",
+      "lm_negative_mean",
+      "lm_positive_mean",
+      "lm_uncertainty_mean",
+      "lm_litigious_mean",
+      "lm_constraining_mean",
+      "lm_net_mean",
+      "no_news"
+    ],
+    "tfidf_svd": 50
+  },
+  "target": {
+    "classification": "target (NAIK/STABIL/TURUN, threshold 0.10%)",
+    "regression": "kurs_besok (dilatih pada selisih, dikonversi ke level)"
+  },
+  "best_iteration": {
+    "clf": 23,
+    "reg": 34
+  },
+  "classification": {
+    "val": {
+      "accuracy": 0.3539,
+      "balanced_accuracy": 0.3415,
+      "macro_f1": 0.3382,
+      "classification_report": {
+        "NAIK": {
+          "precision": 0.38202247191011235,
+          "recall": 0.4927536231884058,
+          "f1-score": 0.43037974683544306,
+          "support": 69.0
+        },
+        "STABIL": {
+          "precision": 0.32653061224489793,
+          "recall": 0.2909090909090909,
+          "f1-score": 0.3076923076923077,
+          "support": 55.0
+        },
+        "TURUN": {
+          "precision": 0.325,
+          "recall": 0.24074074074074073,
+          "f1-score": 0.2765957446808511,
+          "support": 54.0
+        },
+        "accuracy": 0.3539325842696629,
+        "macro avg": {
+          "precision": 0.34451769471833676,
+          "recall": 0.34146781827941247,
+          "f1-score": 0.33822259973620067,
+          "support": 178.0
+        },
+        "weighted avg": {
+          "precision": 0.3475771586250963,
+          "recall": 0.3539325842696629,
+          "f1-score": 0.34581713296341826,
+          "support": 178.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          34,
+          17,
+          18
+        ],
+        [
+          30,
+          16,
+          9
+        ],
+        [
+          25,
+          16,
+          13
+        ]
+      ],
+      "kappa": 0.0105
+    },
+    "test": {
+      "accuracy": 0.3352,
+      "balanced_accuracy": 0.3141,
+      "macro_f1": 0.3109,
+      "classification_report": {
+        "NAIK": {
+          "precision": 0.4117647058823529,
+          "recall": 0.45454545454545453,
+          "f1-score": 0.43209876543209874,
+          "support": 77.0
+        },
+        "STABIL": {
+          "precision": 0.24324324324324326,
+          "recall": 0.18,
+          "f1-score": 0.20689655172413793,
+          "support": 50.0
+        },
+        "TURUN": {
+          "precision": 0.2807017543859649,
+          "recall": 0.3076923076923077,
+          "f1-score": 0.29357798165137616,
+          "support": 52.0
+        },
+        "accuracy": 0.33519553072625696,
+        "macro avg": {
+          "precision": 0.3119032345038537,
+          "recall": 0.3140792540792541,
+          "f1-score": 0.3108577662692043,
+          "support": 179.0
+        },
+        "weighted avg": {
+          "precision": 0.32661751811828776,
+          "recall": 0.33519553072625696,
+          "f1-score": 0.3289524445270953,
+          "support": 179.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          35,
+          18,
+          24
+        ],
+        [
+          24,
+          9,
+          17
+        ],
+        [
+          26,
+          10,
+          16
+        ]
+      ],
+      "kappa": -0.0299
+    }
+  },
+  "regression": {
+    "val": {
+      "rmse": 55.7718,
+      "mae": 40.775,
+      "mape": 0.2474,
+      "skill_vs_naive": 0.0019,
+      "directional_hit": 0.5169
+    },
+    "test": {
+      "rmse": 50.7968,
+      "mae": 37.7442,
+      "mape": 0.2167,
+      "skill_vs_naive": 0.0064,
+      "directional_hit": 0.6034
+    }
+  },
+  "rmse_naive_same_rows": {
+    "val": 55.8789,
+    "test": 51.1231
+  }
+}
