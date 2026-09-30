@@ -85,3 +85,6 @@ xxhash==4.0.1
 yarl==1.25.1
 scikit-learn==1.9.1
 scipy==1.18.1
+holidays
+vaderSentiment
+pysentiment2
