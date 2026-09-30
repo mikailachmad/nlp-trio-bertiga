@@ -36,12 +36,12 @@ Proyek mata kuliah Pemrosesan Bahasa Alami: membangun pipeline NLP & analisis en
 │   ├── scrapping/
 │   │   └── news_scraper.py         # [TODO] scraping berita GDELT (kerja aktual di Scrappings.ipynb)
 │   ├── cleaning/
-│   │   └── text_cleaning.py        # cleaning teks berita
+│   │   └── Cleaning_article.ipynb  # varian pipeline notebook (output title_clean/body_clean + title_bow/body_bow)
 │   ├── filtering/
-│   │   └── text_filtering.py       # filtering teks berita (TF-IDF + K-Means relevansi)
+│   │   └── text_filtering.py       # filtering revisi: field wajib + keyword geopolitik (filter_news)
 │   ├── preprocessing/
-│   │   └── text_preprocessing.py   # preprocessing teks berita
-│   └── main.py                     # CLI entrypoint (--stage cleaning/filtering/preprocessing/all)
+│   │   └── text_preprocessing.py   # preprocessing revisi: light & classical (preprocess_documents)
+│   └── main.py                     # CLI legacy: cleaning → filtering → preprocessing berita
 ├── notebook/
 │   ├── naive_baseline_experiment.ipynb             # EDA & eksperimen Naive Baseline classification
 │   └── naive_baseline_regression_experiment.ipynb  # EDA & eksperimen Naive Baseline regresi
@@ -66,40 +66,64 @@ Setiap URL artikel selanjutnya diakses langsung dari CNBC menggunakan **HTTP req
 **Pipeline:**
 `Google News RSS → Article Discovery → Deduplication → URL CNBC → HTTP Request → HTML/JSON-LD Parsing → Ekstraksi Data → Dataset Berita Mentah`
 
+### Data Cleaning, Filtering & Preprocessing
+
+Alur revisi (acuan: `src/main.ipynb` + modul `src/filtering/` & `src/preprocessing/`):
+`CSV mentah → scrape HTML → cleaning → filtering → preprocessing → data/processed/news_preprocessed.csv`.
+`src/main.py` dipertahankan sebagai **CLI legacy** untuk pipeline ini.
+
 ### Data Cleaning
 
-1. Ekstraksi Komponen Utama:
-   - Judul/Headline: Mengambil nilai kunci "headline" pada tag `<script type="application/ld+json">`.
-   - Konten Berita: Mengekstrak teks dari elemen `<p>` dan `<h2>`.
-2. Pembersihan Tag HTML: Mengisolasi teks agar hanya menghasilkan paragraf berita murni.
-3. Perbaikan Karakter: Memperbaiki karakter yang korup atau tidak valid.
-4. Normalisasi Teks & Spasi: Menyelaraskan karakter ke standar Unicode serta mengonversi baris baru, tab, dan indentasi menjadi spasi tunggal.
-5. Strukturisasi Data: Menyusun hasil ke format structured data dengan atribut `title`, `heading`, `body`, `author`, dan `publish_date`
+Membersihkan hasil scraping HTML menjadi kolom siap pakai (`src/main.ipynb` sel 2, fungsi `cleaning.clean_text`):
 
-> Catatan: Jika dataset awal sudah berupa paragraf mentah yang telah dibersihkan, tahap cleaning dapat dilewati dan langsung masuk ke proses filtering dan preprocessing.
+1. Ekstraksi dari HTML dengan **BeautifulSoup**:
+   - Tanggal terbit dari tag `<time datetime>`, penulis dari `a.Author-authorName`, judul dari `<title>`.
+   - Buang `script/style/noscript/nav/footer/header`, ambil paragraf `<p>` di dalam `[class*='ArticleBody']` / `<article>` (fallback: seluruh teks konten).
+2. Normalisasi teks (`clean_text`): gabung paragraf, rapikan spasi/karakter.
+3. Kolom hasil (`combine_first` dengan data discovery agar tidak ada yang hilang):
+   `author`, `title`, `body`, `published_at`.
 
 ### Data Filtering
 
-1. Penetapan keyword berdasarkan topik pembahasan:
-   - Geopolitik:
-     > konflik, perang, ancaman, perdamaian, diplomasi, geopolitik, global, dunia, internasional, Amerika, United States, US, AS, China, Rusia, Ukraina, Timur Tengah, Iran, Palestina, Gaza, Rafah, Israel, persaingan, klaim, presiden, perdana menteri, ekspor, impor, perdagangan, pemerintah.
-   - Nilai tukar rupiah:
-     > rupiah, dolar AS, nilai tukar, kurs, ekonomi, perdagangan, keuangan, peningkatan, inflasi, mata uang, global, penguatan, menguat, pelemahan, melemah, suku bunga, pasar, ekspor, impor, devisa, valuta, bank, dana.
-2. Perhitungan nilai probabilitas keterkaitan tiap dokumen berita terhadap seluruh kosa kata dari keyword pada masing-masing topik menggunakan TF-IDF
-3. Pemetaan skor probabilitas ke dalam ruang dua dimensi untuk mengukur tingkat kedekatan dengan kedua topik pembahasan.
-4. Pengelompokan (clustering) dokumen ke dalam 4 kategori menggunakan metode K-Means:
-   - Kategori 1: Keterkaitan geopolitik tinggi dan nilai tukar tinggi.
-   - Kategori 2: Keterkaitan geopolitik tinggi dan nilai tukar rendah.
-   - Kategori 3: Keterkaitan geopolitik rendah dan nilai tukar tinggi.
-   - Kategori 4: Keterkaitan geopolitik rendah dan nilai tukar rendah.
-5. Pemilihan dokumen berita yang tergolong dalam kluster berisikan tingkat geopolitik dan nilai tukar tinggi hasil tahap (c).
+Seleksi relevansi via `filter_news(df)` (`src/filtering/text_filtering.py`) — dua lapis:
+
+1. **Validasi field wajib** (`filter_required_fields`): baris hanya lolos jika
+   `author, title, published_at, body, discovery_title, url` semuanya terisi (tidak null/kosong).
+2. **Filter relevansi geopolitik** (`filter_geopolitical_relevance`, recall tinggi berbasis keyword):
+   - 5 kelompok kosakata: `conflict` (war, invasion, missile, …), `sanction` (sanction, embargo, export control, …), `diplomacy` (summit, treaty, negotiation, …), `trade` (tariff, trade war, export ban, …), `political_risk` (election, coup, protest, …).
+   - Pencocokan case-insensitive dengan batas kata, digabung dari `title + body` namun **asal tiap temuan tetap dicatat** (`find_geopolitical_keywords` → kolom `geopolitical_matches` berisi daftar temuan per `title`/`body`/`discovery_title`).
+   - Baris lolos jika ada ≥ 1 temuan di salah satu dari ketiganya.
+3. **Rencana lanjutan** (tertulis di docstring modul, belum diimplementasikan): anotasi manual
+   terstratifikasi tahun & sumber lalu latih classifier dengan label
+   `0 = tidak relevan`, `1 = relevan geopolitik dampak ekonomi rendah`,
+   `2 = relevan geopolitik berpotensi memengaruhi pasar`
+   (kandidat: Logistic Regression / Linear SVM + TF-IDF, transformer multilingual, zero-shot sebagai alat bantu).
 
 ### Data Preprocessing
 
-1. Deduplikasi Paragraf: Menghapus duplikasi teks baik secara persis (exact duplication) maupun menyerupai (near duplication) pada tingkat blok.
-2. Penandaan Entitas Khusus: Mengubah URL dan email menjadi placeholder "URL" dan "EMAIL".
-3. Penyeragaman Huruf Kecil (Case Folding): Mengonversi seluruh huruf besar pada teks menjadi huruf kecil (lowercase).
-4. Retensi Entitas & Stopwords: Mempertahankan nama, angka, dan kata henti (stopword) dengan menyimpan nama entitas ke teks asli.
+Preprocessing via `preprocess_documents` (`src/preprocessing/text_preprocessing.py`,
+mendukung input DataFrame/Series/list/str/dict) — menghasilkan **dua versi teks** per artikel:
+
+**A. Light (`text_clean_light`)** — untuk transformer, sentiment model, NER, embedding:
+1. Normalisasi Unicode NFC, unescape + hapus tag HTML, hapus karakter kontrol.
+2. Masking entitas khusus: URL → `URL`, email → `EMAIL` (email dulu agar domainnya tidak terpotong regex URL).
+3. Deduplikasi paragraf: exact (case-insensitive) + near-duplicate via Jaccard 3-shingle ≥ `0.8`.
+4. Normalisasi spasi. Kapitalisasi, tanda baca, negasi, nama, angka, dan urutan kata **dipertahankan**.
+
+**B. Classical (`text_clean_classical` + `tokens_classical`/`unigrams`/`bigrams`)** — untuk TF-IDF, LDA, BoW:
+1. Berangkat dari hasil light, lalu case folding (lowercase).
+2. Tokenisasi kata (menjaga kata & angka), bersihkan posesif (`china's` → `china`).
+3. Lematisasi WordNet **POS-aware** (bukan stemming; ada fallback aturan dasar bila NLTK tak tersedia).
+4. Stopword removal dengan **kata negasi dijamin tidak terhapus**
+   (`no/not/never/tidak/bukan/jangan/…`, termasuk kontraksi `don't/won't/…`).
+5. Filter token < `min_token_len` (3, kecuali kata negasi) + bentuk **unigram & bigram**
+   (`suku_bunga`).
+
+Kolom output: `text_clean_light`, `text_clean_classical`, `tokens_classical`,
+`unigrams`, `bigrams`, `text_final` (= light, untuk kompatibilitas), `preserved_entities`
+(kandidat kapital & angka). Pipeline notebook terpisah (`src/cleaning/Cleaning_article.ipynb`)
+menyediakan varian alternatif dengan output `title_clean`/`body_clean` (VADER) dan
+`title_bow`/`body_bow` (BoW/Loughran-McDonald).
 
 ## Status Progress — Tugas 1
 
@@ -110,7 +134,11 @@ Setiap URL artikel selanjutnya diakses langsung dari CNBC menggunakan **HTTP req
 | Strategi & fungsi temporal alignment               | ✅ Selesai (siap dijalankan, support 3 timezone) | `src/jisdor/temporal_alignment.py`, `docs/temporal_alignment_strategy.md`                                                    |
 | Visualisasi tren kurs                              | ✅ Selesai (output PNG & HTML plotly)            | `src/jisdor/visualize_jisdor.py`                                                                                             |
 | Scraping data berita                               | 🟡 sebagian selesai                              | `src/scrapping/Scrappings.ipynb`                                                                                             |
+<<<<<<< HEAD
 | Cleaning, filtering, dan preprocessing teks berita | ✅ Selesai (revisi terbaru dari tim)             | `src/cleaning/text_cleaning.py`, `src/filtering/text_filtering.py`, `src/preprocessing/text_preprocessing.py`, `src/main.py` |
+=======
+| Cleaning, filtering, dan preprocessing teks berita | ✅ Selesai (revisi terbaru dari tim)             | `src/main.ipynb` + `src/filtering/text_filtering.py`, `src/preprocessing/text_preprocessing.py` → `data/processed/news_preprocessed.csv` |
+>>>>>>> b1171f89d0f483435d89d57585c93bafef88e015
 | Laporan PDF                                        | 🟡 Outline dibuat, konten belum diisi            | `report/`                                                                                                                    |
 
 ## Status Progress — Tugas 2
@@ -142,10 +170,17 @@ Dua formulasi target dibangun sekaligus dari sumber yang sama — lihat `docs/ta
 - **Alasan**: Tanpa kelas STABIL, ~30% hari trading akan di-drop karena perubahan kurs terlalu kecil (mendekati nol). Threshold 0.1% tervalidasi empiris dari statistik deskriptif data (std ≈ 0.33%, mean ≈ 0.019%).
 
 **2. Regresi (kolom `kurs_besok`)**
+<<<<<<< HEAD
 
 - **Keputusan**: Nilai mentah `kurs_jisdor` hari berikutnya.
 - **Alasan kedua formulasi dipertahankan**: classification menangkap arah, regresi menangkap magnitude dan dibandingkan.
 
+=======
+
+- **Keputusan**: Nilai mentah `kurs_jisdor` hari berikutnya ("Nilai Penutupan Hari Berikutnya" sesuai spesifikasi tugas).
+- **Alasan kedua formulasi dipertahankan**: classification menangkap arah, regresi menangkap magnitude — tim ingin membandingkan keduanya, dan spesifikasi tugas mengizinkan salah satu atau keduanya.
+
+>>>>>>> b1171f89d0f483435d89d57585c93bafef88e015
 Keduanya pakai mekanisme sama: fitur hari t dipasangkan ke label/nilai hari t+1 (**shift(-1)**, prediksi _besok_), bukan hari t sendiri.
 
 ### Detail Split Kronologis
@@ -191,6 +226,7 @@ Keduanya pakai mekanisme sama: fitur hari t dipasangkan ke label/nilai hari t+1 
 ## Cara Menjalankan
 
 1. Buat dan jalankan virtual environment python dengan menjalankan perintah berikut
+<<<<<<< HEAD
 
 ```bash
 python3 -m venv .venv
@@ -244,9 +280,49 @@ python -m src.models.naive_baseline_regression
 ```bash
 python -m src.jisdor.visualize_jisdor
 ```
+=======
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+2. Install dependencies dengan menjalankan perintah berikut
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Jalankan pipeline berita revisi via `src/main.ipynb`
+   (scrape HTML → cleaning → `filter_news` → `preprocess_documents` → `data/processed/news_preprocessed.csv`),
+   atau via CLI legacy:
+   ```bash
+   python src/main.py --stage <cleaning, filtering, preprocessing, all> --input <input_path> --output <output_path>.json
+   ```
+4. Untuk preprocessing data JISDOR:
+   ```bash
+   python -m src.jisdor.preprocess_jisdor
+   ```
+5. Untuk formulasi target variabel:
+   ```bash
+   python -m src.jisdor.target_formulation
+   ```
+6. Untuk split dataset kronologis:
+   ```bash
+   python -m src.jisdor.split_dataset
+   ```
+7. Untuk evaluasi Naive Baseline classification:
+   ```bash
+   python -m src.models.naive_baseline
+   ```
+8. Untuk evaluasi Naive Baseline regresi:
+   ```bash
+   python -m src.models.naive_baseline_regression
+   ```
+9. Untuk visualisasi tren JISDOR:
+   ```bash
+   python -m src.jisdor.visualize_jisdor
+   ```
+>>>>>>> b1171f89d0f483435d89d57585c93bafef88e015
 
-> Catatan: script scraping & cleaning berita masih dalam pengerjaan tim,
-> akan ditambahkan cara menjalankannya begitu tersedia.
+> Catatan: `src/main.py` dipertahankan sebagai CLI legacy untuk pipeline berita
+> (tahap cleaning/filtering/preprocessing/all). Alur kerja aktual ada di `src/main.ipynb`.
 
 ## Catatan
 
