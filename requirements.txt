@@ -91,3 +91,4 @@ pysentiment2
 xgboost
 nbformat
 nbclient
+seaborn
