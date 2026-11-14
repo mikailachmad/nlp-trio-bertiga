@@ -203,6 +203,95 @@ hasil tersebut hanya smoke test, bukan benchmark pretrained GloVe. Benchmark
 sebenarnya baru tersedia setelah model pretrained diunduh atau diberikan lewat
 `--glove-path`. Sumber pretrained: [Stanford GloVe](https://nlp.stanford.edu/projects/glove/).
 
+### Memakai embedding dari modul Python lain
+
+Tiga kelas embedding juga tersedia melalui modul utama `src.models` (atau
+`src.models.static_embeddings`). API
+untuk ketiganya konsisten: `fit` memuat/melatih embedding, `transform`
+menghasilkan satu vektor rata-rata per dokumen. Word2Vec/FastText mendukung
+`save`/`load`, sedangkan GloVe menyediakan `load` untuk cache vektornya.
+Word2Vec dan FastText sebaiknya hanya di-fit dengan dokumen train; transform
+validation/test dengan instance yang sama.
+
+```python
+from src.models import (
+    FastTextEmbedding,
+    GloVeEmbedding,
+    Word2VecEmbedding,
+    make_embedding,
+    run_embedding_experiment,
+)
+
+train_texts = ["market risk rises currency trade news", "market trade currency risk news rises"] * 100
+other_texts = ["new market headline"]
+
+word2vec = Word2VecEmbedding(vector_size=50, epochs=2).fit(train_texts)
+word2vec_vectors = word2vec.transform(other_texts)
+
+fasttext = FastTextEmbedding(vector_size=50, epochs=2).fit(train_texts)
+fasttext_vectors = fasttext.transform(other_texts)  # OOV memakai character n-grams
+
+glove = GloVeEmbedding().fit(train_texts)  # pretrained Stanford GloVe 100d
+glove_vectors = glove.transform(other_texts)
+
+# Pilih model dari konfigurasi atau jalankan eksperimen NLP-only lengkap:
+embedding = make_embedding("fasttext", vector_size=50, epochs=2)
+# run_embedding_experiment("fasttext", ["--output-prefix", "08_fasttext_trial"])
+```
+
+`GloVeEmbedding` menerima `glove_path`, `cache_path`, `archive_path`, dan
+`download` pada constructor untuk memilih file lokal/cache. `fit` pada GloVe
+hanya memuat vektor pretrained yang diperlukan, bukan melatih ulang embedding.
+
+`run_embedding_experiment` menerima nama `word2vec`, `fasttext`, atau `glove`;
+argumen setelah nama diteruskan ke CLI model terkait, termasuk
+`--articles`, `--article-splits`, `--model-dataset`, `--feature-dir`,
+`--results-dir`, dan `--output-prefix`. Word2Vec/FastText menerima `--model-path`,
+sedangkan GloVe menerima `--glove-cache` dan opsi sumber pretrained. Ini
+menyediakan entry point tunggal untuk mengintegrasikan setiap eksperimen ke
+modul utama.
+
+```python
+from src.models import run_embedding_experiment
+
+run_embedding_experiment(
+    "fasttext",
+    [
+        "--articles", "data/processed/articles_aligned.csv",
+        "--article-splits", "data/split/articles_split.csv",
+        "--model-dataset", "data/feature_extracted/model_dataset.csv",
+        "--feature-dir", "outputs/fasttext/features",
+        "--results-dir", "outputs/fasttext/results",
+        "--model-path", "outputs/fasttext/model.npz",
+        "--output-prefix", "fasttext_trial",
+        "--vector-size", "64",
+        "--epochs", "3",
+    ],
+)
+
+run_embedding_experiment(
+    "glove",
+    [
+        "--glove-path", "/models/glove.6B.100d.txt",
+        "--glove-cache", "outputs/glove/cache.npz",
+        "--archive-path", "outputs/glove/glove.6B.zip",
+        "--feature-dir", "outputs/glove/features",
+        "--results-dir", "outputs/glove/results",
+        "--no-download",
+    ],
+)
+```
+
+### Eksperimen melalui notebook dan Google Colab
+
+Notebook [static_embeddings_experiment.ipynb](./notebook/static_embeddings_experiment.ipynb)
+menjalankan Word2Vec, FastText, dan GloVe secara berurutan serta menampilkan file
+comparison hasil. Buka notebook tersebut di Jupyter atau unggah/buka di Google
+Colab; sel setup akan menyiapkan repository dan dependensi runtime. Di Colab,
+aktifkan opsi penyimpanan Google Drive dalam notebook agar output dan cache
+pretrained GloVe tetap tersedia setelah runtime berakhir. Unduhan pretrained
+GloVe memerlukan internet dan ruang penyimpanan yang cukup.
+
 ### Detail Formulasi Target Variabel
 
 Dua formulasi target dibangun sekaligus dari sumber yang sama — lihat `docs/target_formulation.md` untuk alasan lengkap.

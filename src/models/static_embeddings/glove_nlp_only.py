@@ -5,7 +5,7 @@ the official archive is downloaded and only vectors used by the aligned corpus
 are cached locally.
 
 Run from the repository root:
-    python -m src.models.glove_nlp_only
+    python -m src.models.static_embeddings.glove_nlp_only
 """
 
 from __future__ import annotations
@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import io
 import json
-import sys
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -28,9 +27,6 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.utils.class_weight import compute_sample_weight
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(_REPO_ROOT))
-
 from src.jisdor.target_formulation import THRESHOLD_PCT  # noqa: E402
 from src.models.metrics import (  # noqa: E402
     LABEL_ORDER,
@@ -39,7 +35,8 @@ from src.models.metrics import (  # noqa: E402
     evaluate_regression,
 )
 from src.models.naive_baseline import predict_majority, predict_persistence  # noqa: E402
-from src.models.word2vec_nlp_only import (  # noqa: E402
+from src.models.static_embeddings.word2vec_nlp_only import (  # noqa: E402
+    _REPO_ROOT,
     DEFAULT_ARTICLE_SPLITS,
     DEFAULT_ARTICLES,
     DEFAULT_FEATURE_DIR,
@@ -396,6 +393,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--articles", type=Path, default=DEFAULT_ARTICLES)
     parser.add_argument("--article-splits", type=Path, default=DEFAULT_ARTICLE_SPLITS)
     parser.add_argument("--model-dataset", type=Path, default=DEFAULT_MODEL_DATASET)
+    parser.add_argument("--feature-dir", type=Path, default=DEFAULT_FEATURE_DIR)
+    parser.add_argument("--results-dir", type=Path, default=DEFAULT_RESULTS_DIR)
     parser.add_argument("--glove-path", type=Path)
     parser.add_argument("--glove-cache", type=Path, default=DEFAULT_GLOVE_CACHE)
     parser.add_argument("--archive-path", type=Path, default=DEFAULT_ARCHIVE)
@@ -415,10 +414,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     embeddings, coverage = build_daily_embeddings(articles, data, vectors)
 
-    feature_path = (
-        DEFAULT_FEATURE_DIR / f"{args.output_prefix}_daily_features.csv"
-    )
-    DEFAULT_FEATURE_DIR.mkdir(parents=True, exist_ok=True)
+    feature_path = args.feature_dir / f"{args.output_prefix}_daily_features.csv"
+    args.feature_dir.mkdir(parents=True, exist_ok=True)
     embeddings.to_csv(feature_path, index=False)
     embedding_columns = [
         column for column in embeddings.columns if column.startswith("glove_")
@@ -538,8 +535,8 @@ def main(argv: list[str] | None = None) -> int:
             f"skill={metrics['skill_vs_naive']:+.4f}"
         )
 
-    DEFAULT_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    comparison_path = DEFAULT_RESULTS_DIR / f"{args.output_prefix}_comparison.csv"
+    args.results_dir.mkdir(parents=True, exist_ok=True)
+    comparison_path = args.results_dir / f"{args.output_prefix}_comparison.csv"
     pd.DataFrame(results).round(6).to_csv(comparison_path, index=False)
     model_path = (
         str(args.glove_cache.relative_to(_REPO_ROOT))
@@ -577,16 +574,16 @@ def main(argv: list[str] | None = None) -> int:
         "artifacts": {
             "embedding_cache": model_path,
             "vector_source": vector_source,
-            "daily_features": str(feature_path.relative_to(_REPO_ROOT)),
-            "comparison": str(comparison_path.relative_to(_REPO_ROOT)),
+            "daily_features": str(feature_path),
+            "comparison": str(comparison_path),
         },
     }
-    results_path = DEFAULT_RESULTS_DIR / f"{args.output_prefix}_results.json"
+    results_path = args.results_dir / f"{args.output_prefix}_results.json"
     with results_path.open("w", encoding="utf-8") as output_file:
         json.dump(output, output_file, ensure_ascii=False, indent=2)
     _plot_confusion_matrix(
         classification_metrics["test"]["confusion_matrix"],
-        DEFAULT_RESULTS_DIR / f"{args.output_prefix}_confusion_matrix.png",
+        args.results_dir / f"{args.output_prefix}_confusion_matrix.png",
     )
     print(f"GloVe vectors cached: {args.glove_cache}")
     print(f"Results saved: {results_path}")

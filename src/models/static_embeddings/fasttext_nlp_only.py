@@ -1,20 +1,18 @@
-"""Word2Vec NLP-only experiment for next-day JISDOR prediction.
+"""FastText NLP-only experiment for next-day JISDOR prediction.
 
-Word2Vec is trained on training-split articles only. Article vectors are mean
-pooled by trading date and combined with the existing daily lexicon features.
+This implements FastText-style Skip-gram with Negative Sampling using NumPy and
+SciPy, learning character n-gram vectors from train-split articles only.
 
 Run from the repository root:
-    python -m src.models.word2vec_nlp_only
+    python -m src.models.static_embeddings.fasttext_nlp_only
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import re
-import sys
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Sequence
 
@@ -24,11 +22,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy.sparse as sparse
 import xgboost as xgb
 from sklearn.utils.class_weight import compute_sample_weight
-
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(_REPO_ROOT))
 
 from src.jisdor.target_formulation import THRESHOLD_PCT  # noqa: E402
 from src.models.metrics import (  # noqa: E402
@@ -38,66 +34,99 @@ from src.models.metrics import (  # noqa: E402
     evaluate_regression,
 )
 from src.models.naive_baseline import predict_majority, predict_persistence  # noqa: E402
-
-DEFAULT_ARTICLES = _REPO_ROOT / "data" / "processed" / "articles_aligned.csv"
-DEFAULT_ARTICLE_SPLITS = _REPO_ROOT / "data" / "split" / "articles_split.csv"
-DEFAULT_MODEL_DATASET = _REPO_ROOT / "data" / "feature_extracted" / "model_dataset.csv"
-DEFAULT_FEATURE_DIR = _REPO_ROOT / "data" / "feature_extracted"
-DEFAULT_MODEL_PATH = (
-    _REPO_ROOT / "data" / "features" / "artifacts" / "word2vec_sgns.npz"
+from src.models.static_embeddings import (  # noqa: E402
+    _REPO_ROOT,
+    DEFAULT_ARTICLE_SPLITS,
+    DEFAULT_ARTICLES,
+    DEFAULT_FEATURE_DIR,
+    DEFAULT_MODEL_DATASET,
+    DEFAULT_RESULTS_DIR,
+    ID2LABEL,
+    LABEL2ID,
+    LEXICON_FEATURES,
+    SPLITS,
+    _add_result,
+    _validate_dataset,
+    load_article_text,
+    make_classifier,
+    make_regressor,
+    tokenize,
 )
-DEFAULT_RESULTS_DIR = _REPO_ROOT / "results"
 
-LEXICON_FEATURES = [
-    "vader_title_mean",
-    "vader_body_mean",
-    "vader_body_min",
-    "vader_neg_share",
-    "lm_negative_mean",
-    "lm_positive_mean",
-    "lm_uncertainty_mean",
-    "lm_litigious_mean",
-    "lm_constraining_mean",
-    "lm_net_mean",
-    "no_news",
-]
-LABEL2ID = {label: index for index, label in enumerate(LABEL_ORDER)}
-ID2LABEL = {index: label for label, index in LABEL2ID.items()}
-TOKEN_RE = re.compile(r"[^\W_]+(?:'[^\W_]+)?", flags=re.UNICODE)
-SPLITS = ("train", "val", "test")
+DEFAULT_MODEL_PATH = (
+    _REPO_ROOT / "data" / "features" / "artifacts" / "fasttext_sgns.npz"
+)
 NEGATIVE_SAMPLES = 5
 TRAIN_BATCH_SIZE = 4096
 
 
-def tokenize(text: object) -> list[str]:
-    """Return lowercase word tokens from a preprocessed article field."""
-    if not isinstance(text, str):
-        return []
-    return TOKEN_RE.findall(text.lower())
+def _fnv1a_hash(text: str, bucket_count: int) -> int:
+    """Return a stable FastText-style hash without Python's randomized hash()."""
+    value = 2166136261
+    for byte in text.encode("utf-8"):
+        value = ((value ^ byte) * 16777619) & 0xFFFFFFFF
+    return value % bucket_count
+
+
+def character_ngram_buckets(
+    token: str,
+    bucket_count: int,
+    min_n: int,
+    max_n: int,
+) -> np.ndarray:
+    """Hash boundary-marked character n-grams for known and unseen words."""
+    marked = f"<{token}>"
+    buckets = {
+        _fnv1a_hash(marked[start : start + size], bucket_count)
+        for size in range(min_n, max_n + 1)
+        for start in range(max(0, len(marked) - size + 1))
+    }
+    if not buckets:
+        buckets.add(_fnv1a_hash(marked, bucket_count))
+    return np.fromiter(sorted(buckets), dtype=np.int32)
 
 
 @dataclass
-class Word2VecModel:
-    """Skip-gram with negative-sampling input vectors and token vocabulary."""
-
+class FastTextModel:
     token_to_id: dict[str, int]
-    vectors: np.ndarray
+    subword_matrix: sparse.csr_matrix
+    subword_vectors: np.ndarray
     counts: np.ndarray
+    bucket_count: int
+    min_n: int
+    max_n: int
     epochs: int
     window: int
     min_count: int
     negative_samples: int
+    vector_cache: dict[str, np.ndarray] = field(default_factory=dict, repr=False)
+
+    def vector_for(self, token: str) -> np.ndarray:
+        """Return a word vector, including a subword-only vector for OOV words."""
+        cached = self.vector_cache.get(token)
+        if cached is not None:
+            return cached
+        token_id = self.token_to_id.get(token)
+        if token_id is not None:
+            row = self.subword_matrix.getrow(token_id)
+        else:
+            buckets = character_ngram_buckets(
+                token, self.bucket_count, self.min_n, self.max_n
+            )
+            row = sparse.csr_matrix(
+                (
+                    np.full(buckets.size, 1.0 / buckets.size, dtype=np.float32),
+                    buckets,
+                    np.array([0, buckets.size], dtype=np.int32),
+                ),
+                shape=(1, self.bucket_count),
+            )
+        vector = np.asarray(row @ self.subword_vectors).reshape(-1)
+        self.vector_cache[token] = vector
+        return vector
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        metadata = {
-            "algorithm": "Skip-gram with Negative Sampling (SGNS)",
-            "epochs": self.epochs,
-            "window": self.window,
-            "min_count": self.min_count,
-            "negative_samples": self.negative_samples,
-            "vector_size": int(self.vectors.shape[1]),
-        }
         tokens = np.asarray(
             [
                 token
@@ -107,12 +136,61 @@ class Word2VecModel:
             ],
             dtype=str,
         )
+        metadata = {
+            "algorithm": "FastText Skip-gram with Negative Sampling (SGNS)",
+            "epochs": self.epochs,
+            "window": self.window,
+            "min_count": self.min_count,
+            "negative_samples": self.negative_samples,
+            "vector_size": int(self.subword_vectors.shape[1]),
+            "bucket_count": self.bucket_count,
+            "character_ngrams": [self.min_n, self.max_n],
+        }
         np.savez_compressed(
             path,
             tokens=tokens,
-            vectors=self.vectors,
+            subword_vectors=self.subword_vectors,
             counts=self.counts,
             metadata=np.array(json.dumps(metadata)),
+        )
+
+    @classmethod
+    def load(cls, path: Path) -> FastTextModel:
+        with np.load(path, allow_pickle=False) as artifact:
+            tokens = artifact["tokens"].tolist()
+            counts = artifact["counts"]
+            vectors = artifact["subword_vectors"]
+            metadata = json.loads(artifact["metadata"].item())
+        token_to_id = {token: index for index, token in enumerate(tokens)}
+        bucket_count = int(metadata["bucket_count"])
+        min_n, max_n = metadata["character_ngrams"]
+        rows: list[int] = []
+        columns: list[int] = []
+        values: list[float] = []
+        for token_id, token in enumerate(tokens):
+            buckets = character_ngram_buckets(
+                token, bucket_count, int(min_n), int(max_n)
+            )
+            rows.extend([token_id] * buckets.size)
+            columns.extend(buckets.tolist())
+            values.extend([1.0 / buckets.size] * buckets.size)
+        matrix = sparse.csr_matrix(
+            (values, (rows, columns)),
+            shape=(len(tokens), bucket_count),
+            dtype=np.float32,
+        )
+        return cls(
+            token_to_id=token_to_id,
+            subword_matrix=matrix,
+            subword_vectors=vectors,
+            counts=counts,
+            bucket_count=bucket_count,
+            min_n=int(min_n),
+            max_n=int(max_n),
+            epochs=int(metadata["epochs"]),
+            window=int(metadata["window"]),
+            min_count=int(metadata["min_count"]),
+            negative_samples=int(metadata["negative_samples"]),
         )
 
 
@@ -120,37 +198,19 @@ def _sigmoid(values: np.ndarray) -> np.ndarray:
     return 1.0 / (1.0 + np.exp(-np.clip(values, -15.0, 15.0)))
 
 
-def train_word2vec(
+def _training_pairs(
     sentences: list[list[str]],
-    vector_size: int,
+    token_to_id: dict[str, int],
+    counts: np.ndarray,
     window: int,
-    min_count: int,
-    epochs: int,
-    seed: int = 42,
-) -> Word2VecModel:
-    """Train deterministic Skip-gram with Negative Sampling on train sentences."""
-    counts = Counter(token for sentence in sentences for token in sentence)
-    vocabulary = {
-        token: count for token, count in counts.items() if count >= min_count
-    }
-    if len(vocabulary) < 2:
-        raise ValueError(
-            "Word2Vec needs at least two training tokens after applying min_count."
-        )
-
-    ordered_tokens = sorted(vocabulary, key=lambda token: (-vocabulary[token], token))
-    token_to_id = {token: index for index, token in enumerate(ordered_tokens)}
-    token_counts = np.asarray(
-        [vocabulary[token] for token in ordered_tokens], dtype=np.float64
-    )
-    total_tokens = token_counts.sum()
+    rng: np.random.Generator,
+) -> tuple[np.ndarray, np.ndarray]:
+    total_tokens = counts.sum()
     keep_probability = np.minimum(
         1.0,
-        (np.sqrt(token_counts / (1e-4 * total_tokens)) + 1)
-        * (1e-4 * total_tokens / token_counts),
+        (np.sqrt(counts / (1e-4 * total_tokens)) + 1)
+        * (1e-4 * total_tokens / counts),
     )
-
-    rng = np.random.default_rng(seed)
     pair_centers: list[np.ndarray] = []
     pair_contexts: list[np.ndarray] = []
     for sentence in sentences:
@@ -168,23 +228,75 @@ def train_word2vec(
             right = ids[offset:]
             pair_centers.extend((left, right))
             pair_contexts.extend((right, left))
-
     if not pair_centers:
         raise ValueError(
-            "No Skip-gram training pairs remain after filtering/subsampling."
+            "No FastText Skip-gram pairs remain after filtering/subsampling."
         )
-    centers = np.concatenate(pair_centers)
-    contexts = np.concatenate(pair_contexts)
-    del pair_centers, pair_contexts
+    return np.concatenate(pair_centers), np.concatenate(pair_contexts)
 
-    vocabulary_size = len(ordered_tokens)
-    input_vectors = rng.uniform(
+
+def train_fasttext(
+    sentences: list[list[str]],
+    vector_size: int,
+    window: int,
+    min_count: int,
+    epochs: int,
+    bucket_count: int,
+    min_n: int = 3,
+    max_n: int = 6,
+    seed: int = 42,
+) -> FastTextModel:
+    """Fit FastText-style subword Skip-gram vectors using training sentences."""
+    if min_n <= 0 or max_n < min_n:
+        raise ValueError("Character n-gram sizes must satisfy 0 < min_n <= max_n.")
+    if bucket_count <= 0:
+        raise ValueError("bucket_count must be positive.")
+
+    token_counts_map = Counter(token for sentence in sentences for token in sentence)
+    vocabulary = {
+        token: count
+        for token, count in token_counts_map.items()
+        if count >= min_count
+    }
+    if len(vocabulary) < 2:
+        raise ValueError(
+            "FastText needs at least two training tokens after applying min_count."
+        )
+    ordered_tokens = sorted(vocabulary, key=lambda token: (-vocabulary[token], token))
+    token_to_id = {token: index for index, token in enumerate(ordered_tokens)}
+    counts = np.asarray(
+        [vocabulary[token] for token in ordered_tokens], dtype=np.float64
+    )
+
+    subword_rows: list[int] = []
+    subword_columns: list[int] = []
+    subword_values: list[float] = []
+    for token_id, token in enumerate(ordered_tokens):
+        buckets = character_ngram_buckets(token, bucket_count, min_n, max_n)
+        weight = 1.0 / buckets.size
+        subword_rows.extend([token_id] * buckets.size)
+        subword_columns.extend(buckets.tolist())
+        subword_values.extend([weight] * buckets.size)
+    subword_matrix = sparse.csr_matrix(
+        (subword_values, (subword_rows, subword_columns)),
+        shape=(len(ordered_tokens), bucket_count),
+        dtype=np.float32,
+    )
+    row_sums = np.asarray(subword_matrix.sum(axis=1)).reshape(-1)
+    subword_matrix = sparse.diags(1.0 / row_sums) @ subword_matrix
+    subword_matrix = subword_matrix.tocsr().astype(np.float32)
+
+    rng = np.random.default_rng(seed)
+    centers, contexts = _training_pairs(
+        sentences, token_to_id, counts, window, rng
+    )
+    subword_vectors = rng.uniform(
         -0.5 / vector_size,
         0.5 / vector_size,
-        size=(vocabulary_size, vector_size),
+        size=(bucket_count, vector_size),
     ).astype(np.float32)
-    output_vectors = np.zeros_like(input_vectors)
-    negative_distribution = token_counts**0.75
+    output_vectors = np.zeros((len(ordered_tokens), vector_size), dtype=np.float32)
+    negative_distribution = counts**0.75
     negative_distribution /= negative_distribution.sum()
 
     pair_count = centers.size
@@ -194,14 +306,14 @@ def train_word2vec(
             batch_indices = order[start : start + TRAIN_BATCH_SIZE]
             batch_centers = centers[batch_indices]
             batch_contexts = contexts[batch_indices]
-            batch_size = batch_indices.size
             negatives = rng.choice(
-                vocabulary_size,
-                size=(batch_size, NEGATIVE_SAMPLES),
+                len(ordered_tokens),
+                size=(batch_indices.size, NEGATIVE_SAMPLES),
                 p=negative_distribution,
             )
 
-            center_vectors = input_vectors[batch_centers].copy()
+            batch_subwords = subword_matrix[batch_centers]
+            center_vectors = np.asarray(batch_subwords @ subword_vectors)
             positive_vectors = output_vectors[batch_contexts].copy()
             negative_vectors = output_vectors[negatives].copy()
             positive_gradient = _sigmoid(
@@ -212,9 +324,7 @@ def train_word2vec(
             )
             center_gradient = (
                 positive_gradient[:, None] * positive_vectors
-                + np.einsum(
-                    "ik,ikj->ij", negative_gradient, negative_vectors
-                )
+                + np.einsum("ik,ikj->ij", negative_gradient, negative_vectors)
             )
             positive_vector_gradient = positive_gradient[:, None] * center_vectors
             negative_vector_gradient = (
@@ -223,10 +333,14 @@ def train_word2vec(
 
             progress = (epoch * pair_count + start) / (epochs * pair_count)
             learning_rate = max(0.0001, 0.025 * (1 - progress))
+            coo = batch_subwords.tocoo()
+            subword_gradient = (
+                center_gradient[coo.row] * coo.data[:, None]
+            )
             np.add.at(
-                input_vectors,
-                batch_centers,
-                -learning_rate * center_gradient,
+                subword_vectors,
+                coo.col,
+                -learning_rate * subword_gradient,
             )
             np.add.at(
                 output_vectors,
@@ -236,118 +350,27 @@ def train_word2vec(
             np.add.at(
                 output_vectors,
                 negatives.ravel(),
-                -learning_rate * negative_vector_gradient.reshape(
-                    -1, vector_size
-                ),
+                -learning_rate
+                * negative_vector_gradient.reshape(-1, vector_size),
             )
         print(
-            f"[Word2Vec] epoch {epoch + 1}/{epochs}; "
+            f"[FastText] epoch {epoch + 1}/{epochs}; "
             f"training pairs={pair_count:,}"
         )
 
-    return Word2VecModel(
+    return FastTextModel(
         token_to_id=token_to_id,
-        vectors=input_vectors,
-        counts=token_counts.astype(np.int64),
+        subword_matrix=subword_matrix,
+        subword_vectors=subword_vectors,
+        counts=counts.astype(np.int64),
+        bucket_count=bucket_count,
+        min_n=min_n,
+        max_n=max_n,
         epochs=epochs,
         window=window,
         min_count=min_count,
         negative_samples=NEGATIVE_SAMPLES,
     )
-
-
-def make_classifier() -> xgb.XGBClassifier:
-    return xgb.XGBClassifier(
-        objective="multi:softprob",
-        num_class=len(LABEL_ORDER),
-        eval_metric="mlogloss",
-        n_estimators=500,
-        max_depth=3,
-        learning_rate=0.03,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        min_child_weight=5,
-        reg_alpha=0.1,
-        reg_lambda=1.0,
-        random_state=42,
-        n_jobs=-1,
-        early_stopping_rounds=30,
-    )
-
-
-def make_regressor() -> xgb.XGBRegressor:
-    return xgb.XGBRegressor(
-        objective="reg:squarederror",
-        eval_metric="rmse",
-        n_estimators=500,
-        max_depth=3,
-        learning_rate=0.03,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        min_child_weight=5,
-        reg_alpha=0.1,
-        reg_lambda=1.0,
-        random_state=42,
-        n_jobs=-1,
-        early_stopping_rounds=30,
-    )
-
-
-def load_article_text(
-    articles_path: Path,
-    article_splits_path: Path,
-    model_dataset: pd.DataFrame,
-) -> pd.DataFrame:
-    """Attach the pipeline's article split labels to aligned article text."""
-    articles = pd.read_csv(articles_path)
-    split_map = pd.read_csv(article_splits_path, usecols=["url", "split"])
-    required_text = {"url"}
-    if not required_text.issubset(articles.columns):
-        raise ValueError(f"{articles_path} must contain a `url` column.")
-    if split_map["url"].duplicated().any():
-        raise ValueError(f"{article_splits_path} contains duplicate article URLs.")
-    if split_map["split"].isna().any() or not split_map["split"].isin(SPLITS).all():
-        raise ValueError(
-            f"{article_splits_path} split values must be train, val, or test."
-        )
-
-    text_fields = [
-        column
-        for column in ("title_bow", "body_bow", "title_clean", "body_clean")
-        if column in articles.columns
-    ]
-    if not any(column in text_fields for column in ("title_bow", "title_clean")):
-        raise ValueError(f"{articles_path} must contain title_bow or title_clean.")
-    if not any(column in text_fields for column in ("body_bow", "body_clean")):
-        raise ValueError(f"{articles_path} must contain body_bow or body_clean.")
-    if "trading_date" not in articles.columns:
-        raise ValueError(f"{articles_path} must contain a `trading_date` column.")
-
-    articles = articles.merge(
-        split_map,
-        on="url",
-        how="inner",
-        validate="many_to_one",
-    )
-    articles["trading_date"] = pd.to_datetime(
-        articles["trading_date"], errors="coerce"
-    ).dt.normalize()
-    if articles["trading_date"].isna().any():
-        raise ValueError(
-            f"{articles_path} has split articles with invalid trading dates."
-        )
-
-    dates_by_split = model_dataset[["date", "split"]].drop_duplicates()
-    articles = articles.merge(
-        dates_by_split.rename(columns={"date": "trading_date", "split": "dataset_split"}),
-        on="trading_date",
-        how="inner",
-        validate="many_to_one",
-    )
-    mismatch = articles["split"] != articles["dataset_split"]
-    if mismatch.any():
-        raise ValueError("Article split labels do not match model_dataset.csv.")
-    return articles
 
 
 def build_daily_embeddings(
@@ -357,8 +380,10 @@ def build_daily_embeddings(
     window: int,
     min_count: int,
     epochs: int,
-) -> tuple[Word2VecModel, pd.DataFrame]:
-    """Train on train articles and mean-pool article tokens by trading date."""
+    bucket_count: int,
+    min_n: int,
+    max_n: int,
+) -> tuple[FastTextModel, pd.DataFrame]:
     text_column_pairs = (
         ("title_bow", "body_bow"),
         ("title_clean", "body_clean"),
@@ -369,7 +394,6 @@ def build_daily_embeddings(
     )
     if title_col is None or body_col is None:
         raise ValueError("Aligned articles need title/body text columns.")
-
     articles = articles.copy()
     articles["tokens"] = [
         tokenize(
@@ -384,97 +408,38 @@ def build_daily_embeddings(
     ].tolist()
     training_sentences = [tokens for tokens in training_sentences if tokens]
     if not training_sentences:
-        raise ValueError("No non-empty training articles are available for Word2Vec.")
+        raise ValueError("No non-empty training articles are available for FastText.")
 
-    model = train_word2vec(
+    model = train_fasttext(
         sentences=training_sentences,
         vector_size=vector_size,
         window=window,
         min_count=min_count,
         epochs=epochs,
+        bucket_count=bucket_count,
+        min_n=min_n,
+        max_n=max_n,
     )
-
-    feature_columns = [f"word2vec_{index + 1:03d}" for index in range(vector_size)]
+    feature_columns = [f"fasttext_{index + 1:03d}" for index in range(vector_size)]
     daily = np.zeros((len(model_dataset), vector_size), dtype=np.float32)
     counts = np.zeros(len(model_dataset), dtype=np.int64)
     date_to_row = {
         date: index for index, date in enumerate(model_dataset["date"].tolist())
     }
-
     for row in articles.itertuples(index=False):
         row_index = date_to_row.get(row.trading_date)
         if row_index is None:
             continue
-        token_vectors = [
-            model.vectors[model.token_to_id[token]]
-            for token in row.tokens
-            if token in model.token_to_id
-        ]
+        token_vectors = [model.vector_for(token) for token in row.tokens]
         if token_vectors:
             daily[row_index] += np.sum(token_vectors, axis=0)
             counts[row_index] += len(token_vectors)
-
     nonzero_counts = counts > 0
     daily[nonzero_counts] /= counts[nonzero_counts, None]
     features = pd.DataFrame(daily, columns=feature_columns)
     features.insert(0, "split", model_dataset["split"].to_numpy())
     features.insert(0, "date", model_dataset["date"].to_numpy())
     return model, features
-
-
-def _validate_dataset(data: pd.DataFrame) -> pd.DataFrame:
-    required = {
-        "date",
-        "split",
-        "target",
-        "kurs_jisdor",
-        "kurs_besok",
-        *LEXICON_FEATURES,
-    }
-    missing = sorted(required.difference(data.columns))
-    if missing:
-        raise ValueError(f"model_dataset.csv is missing required columns: {missing}")
-
-    data = data.copy()
-    data["date"] = pd.to_datetime(data["date"], errors="coerce").dt.normalize()
-    if data["date"].isna().any():
-        raise ValueError("model_dataset.csv contains invalid dates.")
-    if data["date"].duplicated().any():
-        raise ValueError("model_dataset.csv must contain one row per date.")
-    if not data["split"].isin(SPLITS).all():
-        raise ValueError("model_dataset.csv split values must be train, val, or test.")
-    if data["target"].isna().any() or not data["target"].isin(LABEL_ORDER).all():
-        raise ValueError(f"target values must be in {LABEL_ORDER}.")
-    if data[list(required - {"date", "split", "target"})].isna().any().any():
-        raise ValueError("Model dataset has missing numeric targets/features.")
-
-    data = data.sort_values("date").reset_index(drop=True)
-    split_ranges = data.groupby("split")["date"].agg(["min", "max"])
-    if not set(SPLITS).issubset(split_ranges.index):
-        raise ValueError("model_dataset.csv must contain train, val, and test rows.")
-    if not (
-        split_ranges.loc["train", "max"] < split_ranges.loc["val", "min"]
-        and split_ranges.loc["val", "max"] < split_ranges.loc["test", "min"]
-    ):
-        raise ValueError("Train, validation, and test must be chronological.")
-    return data
-
-
-def _add_result(
-    results: list[dict], model_name: str, split: str, task: str, metrics: dict
-) -> None:
-    results.append(
-        {
-            "model": model_name,
-            "split": split,
-            "task": task,
-            **{
-                key: value
-                for key, value in metrics.items()
-                if key not in {"classification_report", "confusion_matrix"}
-            },
-        }
-    )
 
 
 def _plot_confusion_matrix(matrix: Sequence[Sequence[int]], output_path: Path) -> None:
@@ -485,7 +450,7 @@ def _plot_confusion_matrix(matrix: Sequence[Sequence[int]], output_path: Path) -
     axis.set_yticks(range(len(LABEL_ORDER)), labels=LABEL_ORDER)
     axis.set_xlabel("Prediksi")
     axis.set_ylabel("Aktual")
-    axis.set_title("XGBoost Word2Vec NLP-only: Confusion Matrix (Test)")
+    axis.set_title("XGBoost FastText NLP-only: Confusion Matrix (Test)")
     for row in range(len(LABEL_ORDER)):
         for column in range(len(LABEL_ORDER)):
             axis.text(
@@ -504,20 +469,34 @@ def _plot_confusion_matrix(matrix: Sequence[Sequence[int]], output_path: Path) -
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Latih dan evaluasi XGBoost NLP-only dengan Word2Vec."
+        description="Latih dan evaluasi XGBoost NLP-only dengan FastText."
     )
     parser.add_argument("--articles", type=Path, default=DEFAULT_ARTICLES)
     parser.add_argument("--article-splits", type=Path, default=DEFAULT_ARTICLE_SPLITS)
     parser.add_argument("--model-dataset", type=Path, default=DEFAULT_MODEL_DATASET)
-    parser.add_argument("--output-prefix", default="07_word2vec")
+    parser.add_argument("--feature-dir", type=Path, default=DEFAULT_FEATURE_DIR)
+    parser.add_argument("--results-dir", type=Path, default=DEFAULT_RESULTS_DIR)
+    parser.add_argument("--output-prefix", default="08_fasttext")
     parser.add_argument("--vector-size", type=int, default=100)
     parser.add_argument("--window", type=int, default=5)
     parser.add_argument("--min-count", type=int, default=2)
     parser.add_argument("--epochs", type=int, default=5)
+    parser.add_argument("--bucket-count", type=int, default=50_000)
+    parser.add_argument("--min-ngram", type=int, default=3)
+    parser.add_argument("--max-ngram", type=int, default=6)
     parser.add_argument("--model-path", type=Path, default=DEFAULT_MODEL_PATH)
     args = parser.parse_args(argv)
-    if min(args.vector_size, args.window, args.min_count, args.epochs) <= 0:
-        parser.error("--vector-size, --window, --min-count, and --epochs must be positive.")
+    if min(
+        args.vector_size,
+        args.window,
+        args.min_count,
+        args.epochs,
+        args.bucket_count,
+        args.min_ngram,
+    ) <= 0:
+        parser.error("Embedding dimensions, counts, epochs and n-gram sizes must be positive.")
+    if args.max_ngram < args.min_ngram:
+        parser.error("--max-ngram must be greater than or equal to --min-ngram.")
 
     data = _validate_dataset(pd.read_csv(args.model_dataset))
     articles = load_article_text(args.articles, args.article_splits, data)
@@ -528,17 +507,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         window=args.window,
         min_count=args.min_count,
         epochs=args.epochs,
+        bucket_count=args.bucket_count,
+        min_n=args.min_ngram,
+        max_n=args.max_ngram,
     )
-
-    args.model_path.parent.mkdir(parents=True, exist_ok=True)
     model.save(args.model_path)
-    DEFAULT_FEATURE_DIR.mkdir(parents=True, exist_ok=True)
-    embeddings.to_csv(
-        DEFAULT_FEATURE_DIR / f"{args.output_prefix}_daily_features.csv", index=False
+    args.feature_dir.mkdir(parents=True, exist_ok=True)
+    feature_path = (
+        args.feature_dir / f"{args.output_prefix}_daily_features.csv"
     )
+    embeddings.to_csv(feature_path, index=False)
 
     embedding_columns = [
-        column for column in embeddings.columns if column.startswith("word2vec_")
+        column for column in embeddings.columns if column.startswith("fasttext_")
     ]
     feature_columns = LEXICON_FEATURES + embedding_columns
     data = data.merge(
@@ -552,7 +533,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         for split in SPLITS
     }
     X = {split: splits[split][feature_columns] for split in SPLITS}
-
     train = splits["train"]
     y_class = {
         split: splits[split]["target"].map(LABEL2ID).astype(int)
@@ -563,7 +543,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         for split in SPLITS
     }
     y_delta = {
-        split: (splits[split]["kurs_besok"] - splits[split]["kurs_jisdor"]).astype(float)
+        split: (
+            splits[split]["kurs_besok"] - splits[split]["kurs_jisdor"]
+        ).astype(float)
         for split in SPLITS
     }
     rate_today = {
@@ -619,9 +601,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             include_kappa=True,
         )
         classification_metrics[split] = metrics
-        _add_result(results, "XGBoost Word2Vec NLP-only", split, "clf", metrics)
+        _add_result(results, "XGBoost FastText NLP-only", split, "clf", metrics)
         print(
-            f"[Word2Vec clf {split}] accuracy={metrics['accuracy']:.4f} "
+            f"[FastText clf {split}] accuracy={metrics['accuracy']:.4f} "
             f"macro_f1={metrics['macro_f1']:.4f}"
         )
 
@@ -648,29 +630,39 @@ def main(argv: Sequence[str] | None = None) -> int:
             rate_today[split], y_rate[split], predicted_rate[split]
         )
         regression_metrics[split] = metrics
-        _add_result(results, "XGBoost Word2Vec NLP-only", split, "reg", metrics)
+        _add_result(results, "XGBoost FastText NLP-only", split, "reg", metrics)
         print(
-            f"[Word2Vec reg {split}] rmse={metrics['rmse']:.2f} "
+            f"[FastText reg {split}] rmse={metrics['rmse']:.2f} "
             f"skill={metrics['skill_vs_naive']:+.4f}"
         )
 
-    DEFAULT_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(results).round(6).to_csv(
-        DEFAULT_RESULTS_DIR / f"{args.output_prefix}_comparison.csv", index=False
+    args.results_dir.mkdir(parents=True, exist_ok=True)
+    comparison_path = args.results_dir / f"{args.output_prefix}_comparison.csv"
+    pd.DataFrame(results).round(6).to_csv(comparison_path, index=False)
+    model_path = (
+        str(args.model_path.relative_to(_REPO_ROOT))
+        if args.model_path.is_relative_to(_REPO_ROOT)
+        else str(args.model_path)
     )
     output = {
-        "model": "XGBoost Word2Vec NLP-only (tanpa fitur time-series)",
+        "model": "XGBoost FastText NLP-only (tanpa fitur time-series)",
         "embedding": {
-            "algorithm": "Word2Vec Skip-gram with Negative Sampling (SGNS)",
+            "algorithm": "FastText Skip-gram with Negative Sampling (SGNS)",
             "vector_size": args.vector_size,
             "window": args.window,
             "min_count": args.min_count,
             "epochs": args.epochs,
+            "bucket_count": args.bucket_count,
+            "character_ngrams": [args.min_ngram, args.max_ngram],
             "training_articles": int((articles["split"] == "train").sum()),
             "vocabulary_size": len(model.token_to_id),
             "aggregation": "mean pooling per trading_date",
+            "oov": "character n-gram vectors",
         },
-        "features": {"lexicon": LEXICON_FEATURES, "word2vec_dimensions": len(embedding_columns)},
+        "features": {
+            "lexicon": LEXICON_FEATURES,
+            "fasttext_dimensions": len(embedding_columns),
+        },
         "target": {
             "classification": (
                 f"target (NAIK/STABIL/TURUN, threshold {THRESHOLD_PCT:.2f}%)"
@@ -685,26 +677,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         "regression": regression_metrics,
         "rmse_naive_same_rows": naive_rmse,
         "artifacts": {
-            "embedding_model": str(args.model_path.relative_to(_REPO_ROOT))
-            if args.model_path.is_relative_to(_REPO_ROOT)
-            else str(args.model_path),
-            "daily_features": (
-                f"data/feature_extracted/{args.output_prefix}_daily_features.csv"
-            ),
+            "embedding_model": model_path,
+            "daily_features": str(feature_path),
+            "comparison": str(comparison_path),
         },
     }
-    with (DEFAULT_RESULTS_DIR / f"{args.output_prefix}_results.json").open(
-        "w", encoding="utf-8"
-    ) as output_file:
+    results_path = args.results_dir / f"{args.output_prefix}_results.json"
+    with results_path.open("w", encoding="utf-8") as output_file:
         json.dump(output, output_file, ensure_ascii=False, indent=2)
     _plot_confusion_matrix(
         classification_metrics["test"]["confusion_matrix"],
-        DEFAULT_RESULTS_DIR / f"{args.output_prefix}_confusion_matrix.png",
+        args.results_dir / f"{args.output_prefix}_confusion_matrix.png",
     )
-    print(
-        f"Word2Vec model saved: {args.model_path}\n"
-        f"Results saved under {DEFAULT_RESULTS_DIR / args.output_prefix}"
-    )
+    print(f"FastText model saved: {args.model_path}")
+    print(f"Results saved: {results_path}")
     return 0
 
 
