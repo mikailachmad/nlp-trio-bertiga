@@ -8,7 +8,7 @@ Proyek mata kuliah Pemrosesan Bahasa Alami: membangun pipeline NLP & analisis en
 | ---------------------------------------------------- | ----------------------------------------------- |
 | Mikail Achmad - 24/542370/PA/23026 (Project Manager) | Financial Data Acquisition & Temporal Alignment |
 | Widad Muhammad Rafi - 24/545635/PA/23190             | News Scraping (TBA)                             |
-| PRATAMA NANINDRA AJI - 24/533677/PA/22604            | Text Cleaning & Filtering Strategy              |
+| Pratama Nanindra Aji - 24/533677/PA/22604            | Text Cleaning & Filtering Strategy              |
 
 ## Struktur Repositori
 
@@ -146,11 +146,37 @@ menyediakan varian alternatif dengan output `title_clean`/`body_clean` (VADER) d
 | Desain train/val/test split kronologis (80/10/10)                         | ✅ Selesai  | `src/jisdor/split_dataset.py`, output: `data/split/{train,val,test}.csv` (membawa kedua target sekaligus)  |
 | Naive Baseline classification (Persistence of Direction & Majority-Class) | ✅ Selesai  | `src/models/naive_baseline.py`, notebook: `notebook/naive_baseline_experiment.ipynb`                       |
 | Naive Baseline regresi (Persistence / Random Walk)                        | ✅ Selesai  | `src/models/naive_baseline_regression.py`, notebook: `notebook/naive_baseline_regression_experiment.ipynb` |
+| Eksperimen static embedding Word2Vec NLP-only                            | ✅ Selesai  | `src/models/word2vec_nlp_only.py`, hasil: `results/07_word2vec_results.json`                               |
+| Eksperimen static embedding FastText NLP-only                            | ✅ Selesai  | `src/models/fasttext_nlp_only.py`, hasil: `results/08_fasttext_results.json`                               |
 | Strategi ekstraksi fitur NLP (sentimen Loughran-McDonald, TF-IDF)         | 🔲 Belum    | Butir 1a–1c tugas 2                                                                                        |
 | Model baseline time-series (ARIMA / XGBoost)                              | 🔲 Belum    | Butir 2b tugas 2                                                                                           |
 | Model gabungan awal (time-series + fitur NLP)                             | 🔲 Belum    | Butir 2c tugas 2                                                                                           |
-| Metrik evaluasi & analisis perbandingan                                   | 🟡 Sebagian | Naive baseline (classification & regresi) sudah dievaluasi; model lain belum                               |
+| Metrik evaluasi & analisis perbandingan                                   | 🟡 Sebagian | Naive baseline, Word2Vec, dan FastText NLP-only sudah dievaluasi; model lain belum                          |
 | Laporan PDF Tugas 2                                                       | 🔲 Belum    |                                                                                                            |
+
+### Hasil Word2Vec NLP-only
+
+Pada test split yang sama dengan model, macro-F1 klasifikasi **0.2964**, di bawah
+naive persistence **0.3562**. RMSE regresi **50.78** dibanding random-walk **51.12**
+(skill **+0.0066**). Jadi, eksperimen awal ini belum mengalahkan baseline klasifikasi,
+sementara peningkatan regresinya masih kecil. Detail metrik dan confusion matrix ada
+di `results/07_word2vec_results.json` dan `results/07_word2vec_confusion_matrix.png`.
+
+### Eksperimen FastText NLP-only
+
+Jalankan setelah split dan fitur leksikon tersedia:
+
+```bash
+python -m src.models.fasttext_nlp_only
+```
+
+FastText dilatih dengan Skip-gram dan negative sampling pada artikel train saja.
+Representasi setiap token merupakan rata-rata embedding character n-gram berbatas
+kata (default panjang 3–6); karena itu token OOV pada validation/test tetap dapat
+direpresentasikan dari subword-nya. Dimensi, window, `min_count`, epoch, jumlah
+bucket hash, serta batas n-gram dapat diatur lewat opsi CLI. Model, fitur
+per-hari, tabel metrik, dan confusion matrix ditulis ke `data/features/artifacts/`,
+`data/feature_extracted/`, dan `results/`.
 
 ### Detail Formulasi Target Variabel
 
@@ -228,6 +254,35 @@ pip install -r requirements.txt
 ```
 
 3. Jalankan pipeline berita revisi via `src/main.ipynb`
+
+### Eksperimen Word2Vec NLP-only
+
+Setelah notebook `src/02_split_data.ipynb` dan `src/03_feature_extraction.ipynb`
+selesai dijalankan, latih embedding Word2Vec pada artikel di split train saja dan
+evaluasi model klasifikasi/regresi dengan:
+
+```bash
+python -m src.models.word2vec_nlp_only
+```
+
+Implementasi menggunakan Word2Vec Skip-gram with Negative Sampling (SGNS) berbasis
+NumPy agar bisa dijalankan pada environment proyek saat ini (Python 3.14); Gensim
+belum dapat dibangun pada versi Python tersebut.
+Script memakai `data/processed/articles_aligned.csv` sebagai sumber teks,
+`data/split/articles_split.csv` untuk label split artikel, dan
+`data/feature_extracted/model_dataset.csv` untuk target serta fitur leksikon.
+Secara default Word2Vec memakai Skip-gram 100 dimensi, window 5, `min_count=2`,
+5 epoch, dan seed 42. Representasi token dirata-ratakan menjadi satu vektor per
+hari bursa, lalu digabungkan dengan 11 fitur leksikon NLP. XGBoost dilatih sebagai
+model NLP-only (tanpa fitur kurs historis); validation dipakai untuk early stopping
+dan test hanya untuk evaluasi.
+
+Model dan vocabulary disimpan di `data/features/artifacts/word2vec_sgns.npz`, vektor harian
+di `data/feature_extracted/07_word2vec_daily_features.csv`, dan metrik, tabel
+perbandingan dengan naive baseline, serta confusion matrix disimpan di `results/`.
+Parameter training dan lokasi file dapat diubah lewat opsi CLI, misalnya
+`--vector-size 150 --window 7 --epochs 15`. Pastikan semua artefak split berasal
+dari proses yang sama agar pemetaan teks, tanggal, target, dan evaluasi tetap selaras.
    (scrape HTML → cleaning → `filter_news` → `preprocess_documents` → `data/processed/news_preprocessed.csv`),
    atau via CLI legacy:
 
