@@ -170,6 +170,9 @@
   },
   "artifacts": {
     "embedding_model": "data/features/artifacts/word2vec_sgns.npz",
-    "daily_features": "data/feature_extracted/07_word2vec_daily_features.csv"
+    "daily_features": "/home/ajipratama53/Projects/nlp-trio-bertiga/data/feature_extracted/07_word2vec_daily_features.csv",
+    "comparison": "/home/ajipratama53/Projects/nlp-trio-bertiga/results/07_word2vec_comparison.csv",
+    "results": "/home/ajipratama53/Projects/nlp-trio-bertiga/results/07_word2vec_results.json",
+    "confusion_matrix": "/home/ajipratama53/Projects/nlp-trio-bertiga/results/07_word2vec_confusion_matrix.png"
   }
 }
