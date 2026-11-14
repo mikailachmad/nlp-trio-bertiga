@@ -1,2 +1,4 @@
 .venv
 __pycache__
+data/features/pretrained/
+data/features/artifacts/glove_6b_100d.npz

@@ -1,0 +1,11 @@
+model,split,task,accuracy,balanced_accuracy,macro_f1,kappa,rmse,mae,mape,skill_vs_naive,directional_hit
+Naive Persistence of Direction,val,clf,0.3785,0.3711,0.3713,0.0603,,,,,
+Naive Majority-Class,val,clf,0.3898,0.3333,0.187,0.0,,,,,
+Naive Persistence (Random Walk),val,reg,,,,,56.0099,40.8701,0.2479,0.0,
+Naive Persistence of Direction,test,clf,0.3687,0.3562,0.3562,0.0326,,,,,
+Naive Majority-Class,test,clf,0.4302,0.3333,0.2005,0.0,,,,,
+Naive Persistence (Random Walk),test,reg,,,,,51.1231,38.5419,0.2214,0.0,
+XGBoost GloVe NLP-only,val,clf,0.3333,0.3464,0.3278,0.0196,,,,,
+XGBoost GloVe NLP-only,test,clf,0.2905,0.2893,0.2763,-0.0565,,,,,
+XGBoost GloVe NLP-only,val,reg,,,,,55.7976,40.7871,0.2474,0.0038,0.5085
+XGBoost GloVe NLP-only,test,reg,,,,,51.3681,38.369,0.2204,-0.0048,0.5419
