@@ -1,0 +1,35 @@
+{
+  "baseline": "XGBoost TS-only",
+  "candidate": "Late Fusion (basic)",
+  "split": "test",
+  "n_dates": 179,
+  "classification": {
+    "nlp_helped": 9,
+    "nlp_hurt": 9,
+    "both_correct": 57,
+    "both_wrong": 104,
+    "net_help": 0,
+    "mcnemar": {
+      "p_value": 1.0,
+      "n_discordant": 18,
+      "favored": "seimbang"
+    }
+  },
+  "regression": {
+    "mae_base": 38.4611,
+    "mae_cand": 38.3618,
+    "dir_hit_base": 0.5028,
+    "dir_hit_cand": 0.5363,
+    "error_correlation": 0.9999,
+    "dates_cand_closer": 109,
+    "dates_base_closer": 70
+  },
+  "nlp_signal_vs_direction_corr": {
+    "vader_title_mean": -0.0099,
+    "vader_body_mean": -0.0375,
+    "vader_neg_share": 0.0707,
+    "lm_negative_mean": 0.0861,
+    "lm_positive_mean": 0.0651,
+    "lm_net_mean": -0.0569
+  }
+}
