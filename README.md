@@ -148,7 +148,7 @@ menyediakan varian alternatif dengan output `title_clean`/`body_clean` (VADER) d
 | Naive Baseline regresi (Persistence / Random Walk)                        | ✅ Selesai  | `src/models/naive_baseline_regression.py`, notebook: `notebook/naive_baseline_regression_experiment.ipynb` |
 | Eksperimen static embedding Word2Vec NLP-only                            | ✅ Selesai  | `src/models/word2vec_nlp_only.py`, hasil: `results/07_word2vec_results.json`                               |
 | Eksperimen static embedding FastText NLP-only                            | ✅ Selesai  | `src/models/fasttext_nlp_only.py`, hasil: `results/08_fasttext_results.json`                               |
-| Eksperimen static embedding GloVe NLP-only                               | 🟡 Siap dijalankan | `src/models/glove_nlp_only.py`; hasil benchmark dibuat setelah vektor pretrained tersedia                  |
+| Eksperimen static embedding GloVe NLP-only                               | ✅ Selesai | `src/models/glove_nlp_only.py`, hasil:  `results/09_glove_results.json`                |
 | Strategi ekstraksi fitur NLP (sentimen Loughran-McDonald, TF-IDF)         | 🔲 Belum    | Butir 1a–1c tugas 2                                                                                        |
 | Model baseline time-series (ARIMA / XGBoost)                              | 🔲 Belum    | Butir 2b tugas 2                                                                                           |
 | Model gabungan awal (time-series + fitur NLP)                             | 🔲 Belum    | Butir 2c tugas 2                                                                                           |
@@ -188,20 +188,24 @@ python -m src.models.glove_nlp_only
 ```
 
 Default menggunakan pretrained Stanford GloVe 6B 100d. Pada eksekusi pertama,
-script mengunduh arsip resmi (sekitar 822 MB) ke
-`data/features/pretrained/glove.6B.zip`, lalu men-cache hanya vektor token yang
-ditemukan pada korpus ke `data/features/artifacts/glove_6b_100d.npz`. Unduhan dan
-cache tidak dimasukkan ke Git. Arsip lokal dapat dihindari dengan menyediakan
-GloVe 100d format teks melalui `--glove-path /path/to/glove.6B.100d.txt`; gunakan
-`--no-download` agar script gagal dengan pesan eksplisit bila cache/source belum
-tersedia. OOV diabaikan saat pooling dan cakupan token per split dicatat pada JSON
-hasil. Fitur harian, tabel perbandingan, hasil JSON, dan confusion matrix memakai
-prefix `09_glove` secara default.
+script mengunduh arsip resmi (sekitar 822 MB) bila arsip lokal belum ada, lalu
+men-cache hanya vektor token yang ditemukan pada korpus ke
+`data/features/artifacts/glove_6b_100d.npz`. Arsip dapat diberikan lewat
+`--archive-path`; sumber lokal juga dapat berupa teks GloVe 100d atau ZIP berisi
+vektor teks/biner kompatibel. Contoh menjalankan arsip lokal tanpa mengunduh:
 
-Implementasi dan alur evaluasinya sudah diuji dengan file vektor lokal kecil;
-hasil tersebut hanya smoke test, bukan benchmark pretrained GloVe. Benchmark
-sebenarnya baru tersedia setelah model pretrained diunduh atau diberikan lewat
-`--glove-path`. Sumber pretrained: [Stanford GloVe](https://nlp.stanford.edu/projects/glove/).
+```bash
+python -m src.models.static_embeddings.glove_nlp_only \
+  --archive-path data/features/pretrained/glove.6B.100d.zip \
+  --no-download
+```
+
+OOV diabaikan saat pooling dan cakupan token per split dicatat pada JSON hasil.
+Fitur harian, tabel perbandingan, hasil JSON, dan confusion matrix memakai prefix
+`09_glove` secara default. Benchmark pretrained berhasil dijalankan; hasilnya
+tersedia di `results/09_glove_results.json` dan
+`results/09_glove_comparison.csv`. Sumber pretrained:
+[Stanford GloVe](https://nlp.stanford.edu/projects/glove/).
 
 ### Memakai embedding dari modul Python lain
 

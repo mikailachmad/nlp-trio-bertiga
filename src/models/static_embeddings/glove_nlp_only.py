@@ -16,7 +16,7 @@ import json
 import urllib.request
 import zipfile
 from pathlib import Path
-from typing import Iterable, TextIO
+from typing import BinaryIO, Iterable
 
 import matplotlib
 
@@ -58,10 +58,10 @@ DEFAULT_GLOVE_CACHE = (
     _REPO_ROOT / "data" / "features" / "artifacts" / "glove_6b_100d.npz"
 )
 DEFAULT_ARCHIVE = (
-    _REPO_ROOT / "data" / "features" / "pretrained" / "glove.6B.zip"
+    _REPO_ROOT / "data" / "features" / "pretrained" / "glove.6B.100d.zip"
 )
 GLOVE_ARCHIVE_URL = "https://nlp.stanford.edu/data/glove.6B.zip"
-GLOVE_MEMBER = "glove.6B.100d.txt"
+GLOVE_MEMBER = "glove.6B.100d"
 GLOVE_DIMENSION = 100
 GLOVE_SOURCE_NAME = "Stanford GloVe 6B 100d"
 
@@ -111,11 +111,61 @@ class GloveVectors:
 
 
 def _read_glove_stream(
-    stream: TextIO, needed_tokens: set[str]
+    stream: BinaryIO, needed_tokens: set[str]
+) -> dict[str, np.ndarray]:
+    """Read requested vectors from text GloVe or headered word2vec-binary format."""
+    first_line = stream.readline()
+    header = first_line.rstrip(b"\r\n").split()
+    if len(header) == 2:
+        try:
+            _, dimension = map(int, header)
+        except ValueError:
+            pass
+        else:
+            if dimension != GLOVE_DIMENSION:
+                raise ValueError(
+                    f"GloVe file declares {dimension} dimensions; "
+                    f"expected {GLOVE_DIMENSION}."
+                )
+            probe = stream.read(4096)
+            if probe and all(
+                byte in (9, 10, 13) or 32 <= byte <= 126 for byte in probe
+            ):
+
+                def text_lines_with_header():
+                    yield first_line.decode("utf-8")
+                    pending = bytearray(probe)
+                    while True:
+                        newline = pending.find(b"\n")
+                        if newline >= 0:
+                            line = bytes(pending[: newline + 1])
+                            del pending[: newline + 1]
+                            yield line.decode("utf-8")
+                            continue
+                        chunk = stream.read(8192)
+                        if not chunk:
+                            if pending:
+                                yield pending.decode("utf-8")
+                            break
+                        pending.extend(chunk)
+
+                return _read_glove_text_lines(text_lines_with_header(), needed_tokens)
+            return _read_binary_glove_vectors(stream, needed_tokens, probe)
+
+    def text_lines():
+        yield first_line.decode("utf-8")
+        for line in stream:
+            yield line.decode("utf-8")
+
+    return _read_glove_text_lines(text_lines(), needed_tokens)
+
+
+def _read_glove_text_lines(
+    lines: Iterable[str], needed_tokens: set[str]
 ) -> dict[str, np.ndarray]:
     """Read only requested words from a whitespace-delimited GloVe text stream."""
     vectors: dict[str, np.ndarray] = {}
-    for line_number, line in enumerate(stream, start=1):
+    for line_number, line in enumerate(lines, start=1):
         fields = line.rstrip().split()
         if not fields:
             continue
@@ -154,7 +204,76 @@ def _read_glove_stream(
     return vectors
 
 
-def _open_glove_source(path: Path) -> tuple[TextIO, object | None]:
+def _read_binary_glove_vectors(
+    stream: BinaryIO, needed_tokens: set[str], prefix: bytes = b""
+) -> dict[str, np.ndarray]:
+    """Read requested vectors from a headered word2vec-compatible binary file."""
+    vectors: dict[str, np.ndarray] = {}
+    vector_bytes = GLOVE_DIMENSION * np.dtype("<f4").itemsize
+
+    prefix_view = memoryview(prefix)
+    prefix_offset = 0
+    pushed_byte = b""
+
+    def read(size: int) -> bytes:
+        nonlocal prefix_offset, pushed_byte
+        result = bytearray()
+        if pushed_byte:
+            result.extend(pushed_byte)
+            pushed_byte = b""
+        if len(result) == size:
+            return bytes(result)
+        prefix_remaining = len(prefix_view) - prefix_offset
+        prefix_size = min(size - len(result), prefix_remaining)
+        if prefix_size:
+            result.extend(prefix_view[prefix_offset : prefix_offset + prefix_size])
+            prefix_offset += prefix_size
+        if len(result) < size:
+            result.extend(stream.read(size - len(result)))
+        return bytes(result)
+
+    while True:
+        token = bytearray()
+        char = read(1)
+        while char and char not in (b" ", b"\t", b"\n", b"\r"):
+            token.extend(char)
+            char = read(1)
+        if not char:
+            if token:
+                raise ValueError(
+                    "Malformed binary GloVe vector: missing token delimiter."
+                )
+            break
+        if char in (b"\n", b"\r"):
+            if token:
+                raise ValueError(
+                    "Malformed binary GloVe vector: missing vector values."
+                )
+            continue
+        values = read(vector_bytes)
+        if len(values) != vector_bytes:
+            raise ValueError("Truncated binary GloVe vector.")
+        delimiter = read(1)
+        if delimiter == b"\r":
+            following = read(1)
+            if following != b"\n":
+                pushed_byte = following
+        elif delimiter not in (b"\n", b""):
+            pushed_byte = delimiter
+        word = token.decode("utf-8")
+        if word in needed_tokens:
+            vector = np.frombuffer(values, dtype="<f4").copy()
+            if not np.isfinite(vector).all():
+                raise ValueError(
+                    f"GloVe vector for {word!r} contains non-finite values."
+                )
+            vectors[word] = vector
+            if len(vectors) == len(needed_tokens):
+                break
+    return vectors
+
+
+def _open_glove_source(path: Path) -> tuple[BinaryIO, object | None]:
     """Open either a GloVe text file or the official Stanford zip archive."""
     if path.suffix.lower() == ".zip":
         archive = zipfile.ZipFile(path)
@@ -163,8 +282,8 @@ def _open_glove_source(path: Path) -> tuple[TextIO, object | None]:
         except (KeyError, OSError):
             archive.close()
             raise
-        return io.TextIOWrapper(member, encoding="utf-8"), archive
-    return path.open("r", encoding="utf-8"), None
+        return io.BufferedReader(member), archive
+    return path.open("rb"), None
 
 
 def _download_archive(path: Path) -> None:
