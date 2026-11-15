@@ -146,13 +146,14 @@ menyediakan varian alternatif dengan output `title_clean`/`body_clean` (VADER) d
 | Desain train/val/test split kronologis (80/10/10)                         | ✅ Selesai  | `src/jisdor/split_dataset.py`, output: `data/split/{train,val,test}.csv` (membawa kedua target sekaligus)  |
 | Naive Baseline classification (Persistence of Direction & Majority-Class) | ✅ Selesai  | `src/models/naive_baseline.py`, notebook: `notebook/naive_baseline_experiment.ipynb`                       |
 | Naive Baseline regresi (Persistence / Random Walk)                        | ✅ Selesai  | `src/models/naive_baseline_regression.py`, notebook: `notebook/naive_baseline_regression_experiment.ipynb` |
-| Eksperimen static embedding Word2Vec NLP-only                            | ✅ Selesai  | `src/models/word2vec_nlp_only.py`, hasil: `results/07_word2vec_results.json`                               |
-| Eksperimen static embedding FastText NLP-only                            | ✅ Selesai  | `src/models/fasttext_nlp_only.py`, hasil: `results/08_fasttext_results.json`                               |
-| Eksperimen static embedding GloVe NLP-only                               | ✅ Selesai | `src/models/glove_nlp_only.py`, hasil:  `results/09_glove_results.json`                |
+| Eksperimen static embedding Word2Vec NLP-only                            | ✅ Selesai  | `src/models/static_embeddings/word2vec_nlp_only.py`, hasil: `results/07_word2vec_results.json`             |
+| Eksperimen static embedding FastText NLP-only                            | ✅ Selesai  | `src/models/static_embeddings/fasttext_nlp_only.py`, hasil: `results/08_fasttext_results.json`             |
+| Eksperimen static embedding GloVe NLP-only                               | ✅ Selesai  | `src/models/static_embeddings/glove_nlp_only.py`, hasil: `results/09_glove_results.json`                   |
+| Kategorisasi tema geopolitik dengan LDA                                  | ✅ Selesai  | `src/models/lda_nlp_only.py`, notebook: `notebook/lda_geopolitical_topics.ipynb`                           |
 | Strategi ekstraksi fitur NLP (sentimen Loughran-McDonald, TF-IDF)         | 🔲 Belum    | Butir 1a–1c tugas 2                                                                                        |
 | Model baseline time-series (ARIMA / XGBoost)                              | 🔲 Belum    | Butir 2b tugas 2                                                                                           |
 | Model gabungan awal (time-series + fitur NLP)                             | 🔲 Belum    | Butir 2c tugas 2                                                                                           |
-| Metrik evaluasi & analisis perbandingan                                   | 🟡 Sebagian | Naive baseline, Word2Vec, dan FastText NLP-only sudah dievaluasi; model lain belum                          |
+| Metrik evaluasi & analisis perbandingan                                   | 🟡 Sebagian | Naive baseline, static embedding, dan ablation fitur LDA NLP-only sudah dievaluasi                          |
 | Laporan PDF Tugas 2                                                       | 🔲 Belum    |                                                                                                            |
 
 ### Hasil Word2Vec NLP-only
@@ -168,7 +169,7 @@ di `results/07_word2vec_results.json` dan `results/07_word2vec_confusion_matrix.
 Jalankan setelah split dan fitur leksikon tersedia:
 
 ```bash
-python -m src.models.fasttext_nlp_only
+python -m src.models.static_embeddings.fasttext_nlp_only
 ```
 
 FastText dilatih dengan Skip-gram dan negative sampling pada artikel train saja.
@@ -184,7 +185,7 @@ per-hari, tabel metrik, dan confusion matrix ditulis ke `data/features/artifacts
 Jalankan setelah split dan fitur leksikon tersedia:
 
 ```bash
-python -m src.models.glove_nlp_only
+python -m src.models.static_embeddings.glove_nlp_only
 ```
 
 Default menggunakan pretrained Stanford GloVe 6B 100d. Pada eksekusi pertama,
@@ -296,6 +297,56 @@ aktifkan opsi penyimpanan Google Drive dalam notebook agar output dan cache
 pretrained GloVe tetap tersedia setelah runtime berakhir. Unduhan pretrained
 GloVe memerlukan internet dan ruang penyimpanan yang cukup.
 
+### Topic modeling LDA untuk berita geopolitik
+
+LDA memberi probabilitas campuran topik per artikel, bukan label kategori yang
+sudah ditentukan. Vocabulary dan model hanya di-fit dari artikel train. Untuk
+mencegah pemilihan jumlah topik berdasarkan hasil validation/test, jalankan
+seleksi kandidat terlebih dahulu:
+
+```bash
+python -m src.models.lda_nlp_only \
+  --topic-counts 8,10,12,15 \
+  --select-topics-only
+```
+
+Periksa coherence UMass train dan kata-kata teratas di
+`results/10_lda_topics_topic_counts.csv`, lalu pilih K berdasarkan coherence dan
+inspeksi domain. Jalankan evaluasi dengan K yang sudah dipilih, misalnya:
+
+```bash
+python -m src.models.lda_nlp_only --n-topics 8
+```
+
+Secara default, dokumen dibuat dari gabungan `title_bow` + `body_bow`;
+`CountVectorizer` dan LDA di-fit pada artikel train, sementara validation/test
+hanya ditransformasi. Distribusi topik per artikel disimpan bersama topik
+dominan/confidence. Fitur harian adalah rata-rata probabilitas per artikel
+(bobot artikel sama). Perbandingan menguji baseline NLP yang ada (fitur leksikon
++ TF-IDF-SVD) terhadap baseline + topik LDA, menggunakan split kronologis dan
+XGBoost yang sama. Dataset lama tidak ditimpa.
+
+Artefak default:
+
+- Model LDA/vectorizer: `data/features/artifacts/lda_geopolitical_topics.joblib`
+- Distribusi topik artikel: `data/feature_extracted/10_lda_topics_article_topics.csv`
+- Fitur topik harian: `data/feature_extracted/10_lda_topics_daily_features.csv`
+- Kandidat K dan kata kunci topik: `results/10_lda_topics_topic_counts.csv`,
+  `results/10_lda_topics_topic_terms.csv`
+- Metrik baseline vs LDA: `results/10_lda_topics_comparison.csv` dan
+  `results/10_lda_topics_results.json`
+
+Notebook [lda_geopolitical_topics.ipynb](./notebook/lda_geopolitical_topics.ipynb)
+menyediakan seleksi dua tahap, inspeksi contoh artikel train, penamaan topik
+secara manual, visualisasi distribusi harian, dan tinjauan metrik. Hasil
+eksperimen awal dengan K=8 menunjukkan test macro-F1 0.2911 dibanding baseline
+NLP 0.2856 (keduanya di bawah naive persistence 0.3562); RMSE regresi 50.97
+dibanding baseline NLP 50.73. Jadi penambahan topik belum menunjukkan
+peningkatan konsisten. Beberapa topik juga menangkap berita pasar/teknologi yang
+berkaitan dengan konteks geopolitik, bukan tema konflik murni; interpretasi
+topik perlu ditinjau sebelum digunakan sebagai kategori final. BERTopic belum
+termasuk eksperimen tahap ini.
+
 ### Detail Formulasi Target Variabel
 
 Dua formulasi target dibangun sekaligus dari sumber yang sama — lihat `docs/target_formulation.md` untuk alasan lengkap.
@@ -380,7 +431,7 @@ selesai dijalankan, latih embedding Word2Vec pada artikel di split train saja da
 evaluasi model klasifikasi/regresi dengan:
 
 ```bash
-python -m src.models.word2vec_nlp_only
+python -m src.models.static_embeddings.word2vec_nlp_only
 ```
 
 Implementasi menggunakan Word2Vec Skip-gram with Negative Sampling (SGNS) berbasis

@@ -7,6 +7,7 @@ from src.models.static_embeddings import (
     make_embedding,
     run_embedding_experiment,
 )
+from src.models.topic_modeling import LDATopicModel, select_topic_count
 
 __all__ = [
     "Word2VecEmbedding",
@@ -14,4 +15,6 @@ __all__ = [
     "GloVeEmbedding",
     "make_embedding",
     "run_embedding_experiment",
+    "LDATopicModel",
+    "select_topic_count",
 ]
