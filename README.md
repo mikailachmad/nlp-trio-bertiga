@@ -297,6 +297,16 @@ aktifkan opsi penyimpanan Google Drive dalam notebook agar output dan cache
 pretrained GloVe tetap tersedia setelah runtime berakhir. Unduhan pretrained
 GloVe memerlukan internet dan ruang penyimpanan yang cukup.
 
+Notebook juga menyediakan visualisasi ruang kata dari artefak ketiga model.
+Jalankan sel **Visualisasi ruang embedding** setelah artefak Word2Vec, FastText,
+dan GloVe tersedia. Secara default notebook memakai t-SNE; untuk UMAP, pasang
+`umap-learn` (`pip install umap-learn`) lalu ubah `PROJECTION_METHOD` menjadi
+`"umap"`. Jumlah token yang diplot dapat diatur melalui `MAX_VIS_WORDS`.
+Visualisasi memakai token yang sama-sama tersedia di ketiga model dan membuat
+proyeksi terpisah untuk masing-masing model. Karena itu koordinat, orientasi,
+dan jarak global antar-plot tidak dapat dibandingkan; gunakan plot untuk
+menelaah kedekatan lokal kata di dalam satu model.
+
 ### Topic modeling LDA untuk berita geopolitik
 
 LDA memberi probabilitas campuran topik per artikel, bukan label kategori yang
