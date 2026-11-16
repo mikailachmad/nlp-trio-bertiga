@@ -31,7 +31,9 @@ PIPELINE = [
     ("Temporal alignment JISDOR", Path("src/01_align_merge.ipynb")),
     ("Chronological split + EDA", Path("src/02_split_data.ipynb")),
     ("Feature extraction", Path("src/03_feature_extraction.ipynb")),
+    ("Transformer embeddings", Path("src/03b_transformer_embedding.ipynb")),
     ("Modeling", Path("src/04_modeling.ipynb")),
+    ("Ablation study", Path("src/04b_ablation_study.ipynb")),
 ]
 
 # Files that must exist before the pipeline can start.
@@ -55,6 +57,9 @@ GENERATED_PATHS = [
     Path("data/feature_extracted/tfidf_index.csv"),
     Path("data/feature_extracted/tfidf_vocab.csv"),
     Path("data/feature_extracted/model_dataset.csv"),
+    Path("data/feature_extracted/model_dataset_transformer.csv"),
+    Path("data/feature_extracted/embeddings_finbert_article.npz"),
+    Path("data/feature_extracted/embeddings_finbert_daily.csv"),
     Path("results/04_gabungan_comparison.csv"),
     Path("results/04_gabungan_results.json"),
     Path("results/04_gabungan_confusion_matrix.png"),
@@ -182,6 +187,9 @@ def check_expected_outputs(repo_root: Path) -> None:
         Path("data/split/daily_kurs_split.csv"),
         Path("data/feature_extracted/features_lexicon.csv"),
         Path("data/feature_extracted/model_dataset.csv"),
+    Path("data/feature_extracted/model_dataset_transformer.csv"),
+    Path("data/feature_extracted/embeddings_finbert_article.npz"),
+    Path("data/feature_extracted/embeddings_finbert_daily.csv"),
     ]
 
     missing = []

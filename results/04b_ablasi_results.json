@@ -1,0 +1,559 @@
+{
+  "experiment": "Studi Ablasi Tugas 3",
+  "variants": {
+    "Model A: Hanya Time-Series": {
+      "n_features": 4,
+      "feature_groups": {
+        "Kurs historis": 4
+      },
+      "classification": {
+        "val": {
+          "accuracy": 0.3258,
+          "balanced_accuracy": 0.323,
+          "macro_f1": 0.321,
+          "classification_report": {
+            "NAIK": {
+              "precision": 0.3424657534246575,
+              "recall": 0.36231884057971014,
+              "f1-score": 0.352112676056338,
+              "support": 69.0
+            },
+            "STABIL": {
+              "precision": 0.3611111111111111,
+              "recall": 0.23636363636363636,
+              "f1-score": 0.2857142857142857,
+              "support": 55.0
+            },
+            "TURUN": {
+              "precision": 0.2898550724637681,
+              "recall": 0.37037037037037035,
+              "f1-score": 0.3252032520325203,
+              "support": 54.0
+            },
+            "accuracy": 0.3258426966292135,
+            "macro avg": {
+              "precision": 0.3311439789998456,
+              "recall": 0.32301761577123894,
+              "f1-score": 0.3210100712677147,
+              "support": 178.0
+            },
+            "weighted avg": {
+              "precision": 0.3322664157890784,
+              "recall": 0.3258426966292135,
+              "f1-score": 0.32343278635915246,
+              "support": 178.0
+            }
+          },
+          "confusion_matrix": [
+            [
+              25,
+              15,
+              29
+            ],
+            [
+              22,
+              13,
+              20
+            ],
+            [
+              26,
+              8,
+              20
+            ]
+          ],
+          "kappa": -0.02
+        },
+        "test": {
+          "accuracy": 0.3687,
+          "balanced_accuracy": 0.3668,
+          "macro_f1": 0.3636,
+          "classification_report": {
+            "NAIK": {
+              "precision": 0.4393939393939394,
+              "recall": 0.37662337662337664,
+              "f1-score": 0.40559440559440557,
+              "support": 77.0
+            },
+            "STABIL": {
+              "precision": 0.3137254901960784,
+              "recall": 0.32,
+              "f1-score": 0.31683168316831684,
+              "support": 50.0
+            },
+            "TURUN": {
+              "precision": 0.3387096774193548,
+              "recall": 0.40384615384615385,
+              "f1-score": 0.3684210526315789,
+              "support": 52.0
+            },
+            "accuracy": 0.3687150837988827,
+            "macro avg": {
+              "precision": 0.36394303566979086,
+              "recall": 0.36682317682317683,
+              "f1-score": 0.3636157137981004,
+              "support": 179.0
+            },
+            "weighted avg": {
+              "precision": 0.3750419612790152,
+              "recall": 0.3687150837988827,
+              "f1-score": 0.3700013861789227,
+              "support": 179.0
+            }
+          },
+          "confusion_matrix": [
+            [
+              29,
+              23,
+              25
+            ],
+            [
+              18,
+              16,
+              16
+            ],
+            [
+              19,
+              12,
+              21
+            ]
+          ],
+          "kappa": 0.0452
+        }
+      },
+      "regression": {
+        "val": {
+          "rmse": 55.649,
+          "mae": 40.5738,
+          "mape": 0.2461,
+          "skill_vs_naive": 0.0041,
+          "directional_hit": 0.5337
+        },
+        "test": {
+          "rmse": 51.1018,
+          "mae": 38.2011,
+          "mape": 0.2194,
+          "skill_vs_naive": 0.0004,
+          "directional_hit": 0.5531
+        }
+      }
+    },
+    "Model B: TS + NLP Dasar": {
+      "n_features": 65,
+      "feature_groups": {
+        "Kurs historis": 4,
+        "Lexicon (VADER/LM)": 11,
+        "TF-IDF SVD": 50
+      },
+      "classification": {
+        "val": {
+          "accuracy": 0.3315,
+          "balanced_accuracy": 0.3321,
+          "macro_f1": 0.3287,
+          "classification_report": {
+            "NAIK": {
+              "precision": 0.3548387096774194,
+              "recall": 0.3188405797101449,
+              "f1-score": 0.33587786259541985,
+              "support": 69.0
+            },
+            "STABIL": {
+              "precision": 0.2948717948717949,
+              "recall": 0.41818181818181815,
+              "f1-score": 0.3458646616541353,
+              "support": 55.0
+            },
+            "TURUN": {
+              "precision": 0.3684210526315789,
+              "recall": 0.25925925925925924,
+              "f1-score": 0.30434782608695654,
+              "support": 54.0
+            },
+            "accuracy": 0.33146067415730335,
+            "macro avg": {
+              "precision": 0.33937718572693104,
+              "recall": 0.3320938857170741,
+              "f1-score": 0.3286967834455039,
+              "support": 178.0
+            },
+            "weighted avg": {
+              "precision": 0.340430092852786,
+              "recall": 0.33146067415730335,
+              "f1-score": 0.32939837931885996,
+              "support": 178.0
+            }
+          },
+          "confusion_matrix": [
+            [
+              22,
+              33,
+              14
+            ],
+            [
+              22,
+              23,
+              10
+            ],
+            [
+              18,
+              22,
+              14
+            ]
+          ],
+          "kappa": -0.0056
+        },
+        "test": {
+          "accuracy": 0.2626,
+          "balanced_accuracy": 0.263,
+          "macro_f1": 0.2612,
+          "classification_report": {
+            "NAIK": {
+              "precision": 0.3076923076923077,
+              "recall": 0.2597402597402597,
+              "f1-score": 0.28169014084507044,
+              "support": 77.0
+            },
+            "STABIL": {
+              "precision": 0.20634920634920634,
+              "recall": 0.26,
+              "f1-score": 0.23008849557522124,
+              "support": 50.0
+            },
+            "TURUN": {
+              "precision": 0.27450980392156865,
+              "recall": 0.2692307692307692,
+              "f1-score": 0.27184466019417475,
+              "support": 52.0
+            },
+            "accuracy": 0.26256983240223464,
+            "macro avg": {
+              "precision": 0.26285043932102753,
+              "recall": 0.262990342990343,
+              "f1-score": 0.26120776553815545,
+              "support": 179.0
+            },
+            "weighted avg": {
+              "precision": 0.2697445687915619,
+              "recall": 0.26256983240223464,
+              "f1-score": 0.26441613382083,
+              "support": 179.0
+            }
+          },
+          "confusion_matrix": [
+            [
+              20,
+              34,
+              23
+            ],
+            [
+              23,
+              13,
+              14
+            ],
+            [
+              22,
+              16,
+              14
+            ]
+          ],
+          "kappa": -0.1127
+        }
+      },
+      "regression": {
+        "val": {
+          "rmse": 55.862,
+          "mae": 40.6641,
+          "mape": 0.2467,
+          "skill_vs_naive": 0.0003,
+          "directional_hit": 0.5281
+        },
+        "test": {
+          "rmse": 50.9095,
+          "mae": 38.1646,
+          "mape": 0.2192,
+          "skill_vs_naive": 0.0042,
+          "directional_hit": 0.581
+        }
+      }
+    },
+    "Model C: TS + Transformer": {
+      "n_features": 54,
+      "feature_groups": {
+        "Kurs historis": 4,
+        "Transformer PCA": 50
+      },
+      "classification": {
+        "val": {
+          "accuracy": 0.3034,
+          "balanced_accuracy": 0.3131,
+          "macro_f1": 0.2953,
+          "classification_report": {
+            "NAIK": {
+              "precision": 0.3111111111111111,
+              "recall": 0.2028985507246377,
+              "f1-score": 0.24561403508771928,
+              "support": 69.0
+            },
+            "STABIL": {
+              "precision": 0.3023255813953488,
+              "recall": 0.23636363636363636,
+              "f1-score": 0.2653061224489796,
+              "support": 55.0
+            },
+            "TURUN": {
+              "precision": 0.3,
+              "recall": 0.5,
+              "f1-score": 0.375,
+              "support": 54.0
+            },
+            "accuracy": 0.30337078651685395,
+            "macro avg": {
+              "precision": 0.3044788975021533,
+              "recall": 0.31308739569609134,
+              "f1-score": 0.2953067191788996,
+              "support": 178.0
+            },
+            "weighted avg": {
+              "precision": 0.3050256946259037,
+              "recall": 0.30337078651685395,
+              "f1-score": 0.2909505907626208,
+              "support": 178.0
+            }
+          },
+          "confusion_matrix": [
+            [
+              14,
+              20,
+              35
+            ],
+            [
+              14,
+              13,
+              28
+            ],
+            [
+              17,
+              10,
+              27
+            ]
+          ],
+          "kappa": -0.0336
+        },
+        "test": {
+          "accuracy": 0.3408,
+          "balanced_accuracy": 0.3504,
+          "macro_f1": 0.3322,
+          "classification_report": {
+            "NAIK": {
+              "precision": 0.4375,
+              "recall": 0.2727272727272727,
+              "f1-score": 0.336,
+              "support": 77.0
+            },
+            "STABIL": {
+              "precision": 0.34285714285714286,
+              "recall": 0.24,
+              "f1-score": 0.2823529411764706,
+              "support": 50.0
+            },
+            "TURUN": {
+              "precision": 0.2916666666666667,
+              "recall": 0.5384615384615384,
+              "f1-score": 0.3783783783783784,
+              "support": 52.0
+            },
+            "accuracy": 0.3407821229050279,
+            "macro avg": {
+              "precision": 0.35734126984126985,
+              "recall": 0.35039627039627036,
+              "f1-score": 0.33224377318494963,
+              "support": 179.0
+            },
+            "weighted avg": {
+              "precision": 0.3686984570364459,
+              "recall": 0.3407821229050279,
+              "f1-score": 0.3333258253323978,
+              "support": 179.0
+            }
+          },
+          "confusion_matrix": [
+            [
+              21,
+              14,
+              42
+            ],
+            [
+              12,
+              12,
+              26
+            ],
+            [
+              15,
+              9,
+              28
+            ]
+          ],
+          "kappa": 0.0223
+        }
+      },
+      "regression": {
+        "val": {
+          "rmse": 55.8433,
+          "mae": 40.7649,
+          "mape": 0.2473,
+          "skill_vs_naive": 0.0006,
+          "directional_hit": 0.5169
+        },
+        "test": {
+          "rmse": 50.9709,
+          "mae": 38.1556,
+          "mape": 0.2191,
+          "skill_vs_naive": 0.003,
+          "directional_hit": 0.581
+        }
+      }
+    },
+    "Model C+: TS + NLP Dasar + Transformer": {
+      "n_features": 115,
+      "feature_groups": {
+        "Kurs historis": 4,
+        "Lexicon (VADER/LM)": 11,
+        "TF-IDF SVD": 50,
+        "Transformer PCA": 50
+      },
+      "classification": {
+        "val": {
+          "accuracy": 0.3539,
+          "balanced_accuracy": 0.369,
+          "macro_f1": 0.3482,
+          "classification_report": {
+            "NAIK": {
+              "precision": 0.35135135135135137,
+              "recall": 0.18840579710144928,
+              "f1-score": 0.24528301886792453,
+              "support": 69.0
+            },
+            "STABIL": {
+              "precision": 0.39285714285714285,
+              "recall": 0.4,
+              "f1-score": 0.3963963963963964,
+              "support": 55.0
+            },
+            "TURUN": {
+              "precision": 0.32941176470588235,
+              "recall": 0.5185185185185185,
+              "f1-score": 0.4028776978417266,
+              "support": 54.0
+            },
+            "accuracy": 0.3539325842696629,
+            "macro avg": {
+              "precision": 0.3578734196381255,
+              "recall": 0.36897477187332256,
+              "f1-score": 0.3481857043686825,
+              "support": 178.0
+            },
+            "weighted avg": {
+              "precision": 0.35752034491294243,
+              "recall": 0.3539325842696629,
+              "f1-score": 0.3397849763322575,
+              "support": 178.0
+            }
+          },
+          "confusion_matrix": [
+            [
+              13,
+              20,
+              36
+            ],
+            [
+              12,
+              22,
+              21
+            ],
+            [
+              12,
+              14,
+              28
+            ]
+          ],
+          "kappa": 0.0462
+        },
+        "test": {
+          "accuracy": 0.3408,
+          "balanced_accuracy": 0.3493,
+          "macro_f1": 0.3404,
+          "classification_report": {
+            "NAIK": {
+              "precision": 0.5,
+              "recall": 0.2857142857142857,
+              "f1-score": 0.36363636363636365,
+              "support": 77.0
+            },
+            "STABIL": {
+              "precision": 0.3333333333333333,
+              "recall": 0.32,
+              "f1-score": 0.32653061224489793,
+              "support": 50.0
+            },
+            "TURUN": {
+              "precision": 0.26436781609195403,
+              "recall": 0.4423076923076923,
+              "f1-score": 0.33093525179856115,
+              "support": 52.0
+            },
+            "accuracy": 0.3407821229050279,
+            "macro avg": {
+              "precision": 0.36590038314176243,
+              "recall": 0.34934065934065933,
+              "f1-score": 0.3403674092266076,
+              "support": 179.0
+            },
+            "weighted avg": {
+              "precision": 0.38499325756116354,
+              "recall": 0.3407821229050279,
+              "f1-score": 0.3437718642780451,
+              "support": 179.0
+            }
+          },
+          "confusion_matrix": [
+            [
+              22,
+              17,
+              38
+            ],
+            [
+              8,
+              16,
+              26
+            ],
+            [
+              14,
+              15,
+              23
+            ]
+          ],
+          "kappa": 0.0279
+        }
+      },
+      "regression": {
+        "val": {
+          "rmse": 55.8924,
+          "mae": 40.6833,
+          "mape": 0.2468,
+          "skill_vs_naive": -0.0002,
+          "directional_hit": 0.5281
+        },
+        "test": {
+          "rmse": 50.9178,
+          "mae": 38.1982,
+          "mape": 0.2194,
+          "skill_vs_naive": 0.004,
+          "directional_hit": 0.581
+        }
+      }
+    }
+  },
+  "rmse_naive_same_rows": {
+    "val": 55.8789,
+    "test": 51.1231
+  }
+}
