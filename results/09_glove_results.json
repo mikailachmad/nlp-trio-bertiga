@@ -1,0 +1,195 @@
+{
+  "model": "XGBoost GloVe NLP-only (tanpa fitur time-series)",
+  "embedding": {
+    "algorithm": "Stanford GloVe 6B 100d",
+    "vector_size": 100,
+    "training": "pretrained, tidak di-fit ulang pada split proyek",
+    "aggregation": "mean pooling per trading_date",
+    "oov": "diabaikan; hari tanpa token dikenal memakai vektor nol",
+    "vocabulary_size": 37977,
+    "coverage": {
+      "train": {
+        "tokens_total": 1020029,
+        "tokens_in_vocabulary": 1009716,
+        "token_coverage": 0.98989,
+        "days_without_known_tokens": 115
+      },
+      "val": {
+        "tokens_total": 414862,
+        "tokens_in_vocabulary": 411043,
+        "token_coverage": 0.990795,
+        "days_without_known_tokens": 15
+      },
+      "test": {
+        "tokens_total": 408279,
+        "tokens_in_vocabulary": 404840,
+        "token_coverage": 0.991577,
+        "days_without_known_tokens": 7
+      }
+    }
+  },
+  "features": {
+    "lexicon": [
+      "vader_title_mean",
+      "vader_body_mean",
+      "vader_body_min",
+      "vader_neg_share",
+      "lm_negative_mean",
+      "lm_positive_mean",
+      "lm_uncertainty_mean",
+      "lm_litigious_mean",
+      "lm_constraining_mean",
+      "lm_net_mean",
+      "no_news"
+    ],
+    "glove_dimensions": 100
+  },
+  "target": {
+    "classification": "target (NAIK/STABIL/TURUN, threshold 0.10%)",
+    "regression": "kurs_besok (dilatih pada selisih, dikonversi ke level)"
+  },
+  "best_iteration": {
+    "clf": 22,
+    "reg": 35
+  },
+  "classification": {
+    "val": {
+      "accuracy": 0.3333,
+      "balanced_accuracy": 0.3468,
+      "macro_f1": 0.3281,
+      "classification_report": {
+        "NAIK": {
+          "precision": 0.4642857142857143,
+          "recall": 0.18840579710144928,
+          "f1-score": 0.26804123711340205,
+          "support": 69.0
+        },
+        "STABIL": {
+          "precision": 0.3026315789473684,
+          "recall": 0.41818181818181815,
+          "f1-score": 0.3511450381679389,
+          "support": 55.0
+        },
+        "TURUN": {
+          "precision": 0.3150684931506849,
+          "recall": 0.4339622641509434,
+          "f1-score": 0.36507936507936506,
+          "support": 53.0
+        },
+        "accuracy": 0.3333333333333333,
+        "macro avg": {
+          "precision": 0.3606619287945892,
+          "recall": 0.3468499598114036,
+          "f1-score": 0.32808854678690197,
+          "support": 177.0
+        },
+        "weighted avg": {
+          "precision": 0.36937334047912906,
+          "recall": 0.3333333333333333,
+          "f1-score": 0.3229210667190267,
+          "support": 177.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          13,
+          30,
+          26
+        ],
+        [
+          8,
+          23,
+          24
+        ],
+        [
+          7,
+          23,
+          23
+        ]
+      ],
+      "kappa": 0.0216
+    },
+    "test": {
+      "accuracy": 0.3408,
+      "balanced_accuracy": 0.354,
+      "macro_f1": 0.3357,
+      "classification_report": {
+        "NAIK": {
+          "precision": 0.5,
+          "recall": 0.2727272727272727,
+          "f1-score": 0.35294117647058826,
+          "support": 77.0
+        },
+        "STABIL": {
+          "precision": 0.29213483146067415,
+          "recall": 0.52,
+          "f1-score": 0.37410071942446044,
+          "support": 50.0
+        },
+        "TURUN": {
+          "precision": 0.2916666666666667,
+          "recall": 0.2692307692307692,
+          "f1-score": 0.28,
+          "support": 52.0
+        },
+        "accuracy": 0.3407821229050279,
+        "macro avg": {
+          "precision": 0.36126716604244696,
+          "recall": 0.353986013986014,
+          "f1-score": 0.33568063196501624,
+          "support": 179.0
+        },
+        "weighted avg": {
+          "precision": 0.3814156884899462,
+          "recall": 0.3407821229050279,
+          "f1-score": 0.3376620478182029,
+          "support": 179.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          21,
+          32,
+          24
+        ],
+        [
+          14,
+          26,
+          10
+        ],
+        [
+          7,
+          31,
+          14
+        ]
+      ],
+      "kappa": 0.0338
+    }
+  },
+  "regression": {
+    "val": {
+      "rmse": 55.5923,
+      "mae": 40.4424,
+      "mape": 0.2453,
+      "skill_vs_naive": 0.0075,
+      "directional_hit": 0.5198
+    },
+    "test": {
+      "rmse": 51.0882,
+      "mae": 38.3628,
+      "mape": 0.2203,
+      "skill_vs_naive": 0.0007,
+      "directional_hit": 0.5531
+    }
+  },
+  "rmse_naive_same_rows": {
+    "val": 56.0099,
+    "test": 51.1231
+  },
+  "artifacts": {
+    "embedding_cache": "data/features/artifacts/glove_6b_100d.npz",
+    "vector_source": "data/features/pretrained/glove.6B.100d.zip",
+    "daily_features": "/home/ajipratama53/Projects/nlp-trio-bertiga/data/feature_extracted/09_glove_daily_features.csv",
+    "comparison": "/home/ajipratama53/Projects/nlp-trio-bertiga/results/09_glove_comparison.csv"
+  }
+}

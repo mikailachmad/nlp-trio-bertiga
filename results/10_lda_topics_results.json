@@ -1,0 +1,437 @@
+{
+  "model": "LDA geopolitical topics, NLP-only incremental evaluation",
+  "topic_model": {
+    "algorithm": "sklearn LatentDirichletAllocation",
+    "n_topics": 8,
+    "selection": "selected manually by --n-topics; coherence measured on train only",
+    "vocabulary_size": 5000,
+    "max_features": 5000,
+    "min_df": 3,
+    "max_df": 0.85,
+    "max_iter": 20,
+    "random_state": 42,
+    "daily_aggregation": "mean article topic probabilities; equal article weight",
+    "articles_with_topic_distribution": {
+      "train": 2431,
+      "val": 1007,
+      "test": 1070
+    },
+    "no_news_days": {
+      "train": 115,
+      "val": 15,
+      "test": 7
+    },
+    "topic_terms": [
+      {
+        "topic_id": 1,
+        "top_terms": "oil | prices | energy | year | gas | supply | us | price | crude | market | production | million | global | billion | demand"
+      },
+      {
+        "topic_id": 2,
+        "top_terms": "china | us | trump | chinese | trade | india | tariffs | president | beijing | taiwan | countries | biden | foreign | new | economic"
+      },
+      {
+        "topic_id": 3,
+        "top_terms": "sea | us | saudi | iran | turkey | red | uae | shipping | arabia | region | vessels | east | united | international | according"
+      },
+      {
+        "topic_id": 4,
+        "top_terms": "israel | gaza | hamas | israeli | war | iran | people | us | biden | military | killed | palestinian | attack | president | group"
+      },
+      {
+        "topic_id": 5,
+        "top_terms": "company | companies | us | cnbc | new | business | technology | like | ai | musk | government | according | billion | world | years"
+      },
+      {
+        "topic_id": 6,
+        "top_terms": "year | inflation | bank | economy | us | market | rate | global | growth | economic | rates | dollar | prices | markets | high"
+      },
+      {
+        "topic_id": 7,
+        "top_terms": "ukraine | russia | russian | military | war | ukrainian | forces | putin | defense | moscow | us | weapons | kyiv | troops | invasion"
+      },
+      {
+        "topic_id": 8,
+        "top_terms": "russia | ukraine | russian | putin | president | nato | war | us | european | europe | country | biden | eu | countries | sanctions"
+      }
+    ],
+    "candidate_selection": [
+      {
+        "n_topics": 8,
+        "umass_coherence": -0.7937595463576128,
+        "top_terms": "['oil | prices | energy | year | gas | supply | us | price | crude | market', 'china | us | trump | chinese | trade | india | tariffs | president | beijing | taiwan', 'sea | us | saudi | iran | turkey | red | uae | shipping | arabia | region', 'israel | gaza | hamas | israeli | war | iran | people | us | biden | military', 'company | companies | us | cnbc | new | business | technology | like | ai | musk', 'year | inflation | bank | economy | us | market | rate | global | growth | economic', 'ukraine | russia | russian | military | war | ukrainian | forces | putin | defense | moscow', 'russia | ukraine | russian | putin | president | nato | war | us | european | europe']"
+      },
+      {
+        "n_topics": 12,
+        "umass_coherence": -0.8178600697405756,
+        "top_terms": "['energy | year | gas | billion | company | prices | sales | price | quarter | supply', 'trump | us | president | biden | tariffs | house | election | administration | eu | trade', 'us | sea | red | iran | shipping | vessels | drones | attacks | air | ships', 'israel | hamas | gaza | israeli | war | iran | palestinian | hezbollah | us | attack', 'company | companies | us | technology | cnbc | ai | musk | tech | chips | chip', 'inflation | year | us | bank | economy | prices | global | market | growth | rate', 'china | us | chinese | india | beijing | taiwan | south | korea | north | xi', 'countries | world | turkey | saudi | global | security | president | country | uae | nations', 'russia | ukraine | russian | putin | war | military | ukrainian | moscow | invasion | president', 'people | military | killed | city | forces | war | aid | civilians | attack | ministry', 'people | year | million | new | according | years | money | government | uk | time', 'oil | crude | prices | us | energy | opec | barrel | market | barrels | day']"
+      },
+      {
+        "n_topics": 10,
+        "umass_coherence": -0.8515484412543234,
+        "top_terms": "['year | energy | billion | prices | gas | company | according | price | quarter | supply', 'trump | us | tariffs | president | trade | eu | european | policy | election | economic', 'sea | us | red | shipping | air | vessels | attacks | drones | water | ships', 'israel | gaza | hamas | israeli | iran | war | us | palestinian | attack | killed', 'company | companies | us | cnbc | technology | ai | musk | business | tech | like', 'oil | us | prices | year | market | bank | inflation | global | economy | crude', 'china | us | chinese | india | beijing | taiwan | south | korea | north | xi', 'countries | world | saudi | turkey | global | arabia | international | country | economic | uae', 'russia | ukraine | russian | putin | war | military | ukrainian | moscow | invasion | forces', 'biden | people | president | house | government | war | state | us | year | country']"
+      },
+      {
+        "n_topics": 15,
+        "umass_coherence": -0.8934072725235483,
+        "top_terms": "['energy | gas | oil | prices | climate | fuel | year | europe | natural | billion', 'trump | us | biden | president | house | administration | taiwan | white | china | election', 'sea | us | red | shipping | vessels | attacks | ships | air | houthi | yemen', 'israel | hamas | iran | israeli | gaza | war | palestinian | attack | us | hezbollah', 'company | companies | cnbc | ai | musk | business | us | ceo | technology | tech', 'bank | us | year | inflation | market | rate | rates | economy | dollar | markets', 'nuclear | north | military | korea | us | south | power | afghanistan | taliban | korean', 'countries | world | turkey | saudi | nato | global | summit | uae | security | arabia', 'ukraine | russia | russian | ukrainian | military | war | putin | forces | defense | nato', 'people | killed | gaza | war | city | aid | military | children | civilians | forces', 'million | according | people | new | uk | year | money | years | government | time', 'oil | crude | prices | us | opec | market | barrel | barrels | energy | million', 'china | us | chinese | tariffs | trade | india | beijing | chips | countries | world', 'year | prices | billion | company | quarter | inflation | food | sales | price | supply', 'russia | russian | putin | ukraine | sanctions | european | eu | war | country | europe']"
+      }
+    ]
+  },
+  "features": {
+    "baseline": [
+      "vader_title_mean",
+      "vader_body_mean",
+      "vader_body_min",
+      "vader_neg_share",
+      "lm_negative_mean",
+      "lm_positive_mean",
+      "lm_uncertainty_mean",
+      "lm_litigious_mean",
+      "lm_constraining_mean",
+      "lm_net_mean",
+      "no_news",
+      "tfidf_svd_1",
+      "tfidf_svd_2",
+      "tfidf_svd_3",
+      "tfidf_svd_4",
+      "tfidf_svd_5",
+      "tfidf_svd_6",
+      "tfidf_svd_7",
+      "tfidf_svd_8",
+      "tfidf_svd_9",
+      "tfidf_svd_10",
+      "tfidf_svd_11",
+      "tfidf_svd_12",
+      "tfidf_svd_13",
+      "tfidf_svd_14",
+      "tfidf_svd_15",
+      "tfidf_svd_16",
+      "tfidf_svd_17",
+      "tfidf_svd_18",
+      "tfidf_svd_19",
+      "tfidf_svd_20",
+      "tfidf_svd_21",
+      "tfidf_svd_22",
+      "tfidf_svd_23",
+      "tfidf_svd_24",
+      "tfidf_svd_25",
+      "tfidf_svd_26",
+      "tfidf_svd_27",
+      "tfidf_svd_28",
+      "tfidf_svd_29",
+      "tfidf_svd_30",
+      "tfidf_svd_31",
+      "tfidf_svd_32",
+      "tfidf_svd_33",
+      "tfidf_svd_34",
+      "tfidf_svd_35",
+      "tfidf_svd_36",
+      "tfidf_svd_37",
+      "tfidf_svd_38",
+      "tfidf_svd_39",
+      "tfidf_svd_40",
+      "tfidf_svd_41",
+      "tfidf_svd_42",
+      "tfidf_svd_43",
+      "tfidf_svd_44",
+      "tfidf_svd_45",
+      "tfidf_svd_46",
+      "tfidf_svd_47",
+      "tfidf_svd_48",
+      "tfidf_svd_49",
+      "tfidf_svd_50"
+    ],
+    "lda_topic_dimensions": [
+      "topic_001",
+      "topic_002",
+      "topic_003",
+      "topic_004",
+      "topic_005",
+      "topic_006",
+      "topic_007",
+      "topic_008"
+    ],
+    "comparison": "baseline NLP versus baseline NLP + LDA topic distributions"
+  },
+  "target": {
+    "classification": "target (NAIK/STABIL/TURUN, threshold 0.10%)",
+    "regression": "kurs_besok trained on delta, converted to rate level"
+  },
+  "classification": {
+    "Baseline NLP": {
+      "val": {
+        "accuracy": 0.3333,
+        "balanced_accuracy": 0.3456,
+        "macro_f1": 0.3334,
+        "classification_report": {
+          "NAIK": {
+            "precision": 0.4,
+            "recall": 0.2028985507246377,
+            "f1-score": 0.2692307692307692,
+            "support": 69.0
+          },
+          "STABIL": {
+            "precision": 0.2619047619047619,
+            "recall": 0.4,
+            "f1-score": 0.31654676258992803,
+            "support": 55.0
+          },
+          "TURUN": {
+            "precision": 0.39655172413793105,
+            "recall": 0.4339622641509434,
+            "f1-score": 0.4144144144144144,
+            "support": 53.0
+          },
+          "accuracy": 0.3333333333333333,
+          "macro avg": {
+            "precision": 0.3528188286808977,
+            "recall": 0.3456202716251937,
+            "f1-score": 0.33339731541170387,
+            "support": 177.0
+          },
+          "weighted avg": {
+            "precision": 0.35605651572922176,
+            "recall": 0.3333333333333333,
+            "f1-score": 0.3274065479284355,
+            "support": 177.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            14,
+            37,
+            18
+          ],
+          [
+            16,
+            22,
+            17
+          ],
+          [
+            5,
+            25,
+            23
+          ]
+        ],
+        "kappa": 0.0157
+      },
+      "test": {
+        "accuracy": 0.2961,
+        "balanced_accuracy": 0.3292,
+        "macro_f1": 0.2856,
+        "classification_report": {
+          "NAIK": {
+            "precision": 0.36363636363636365,
+            "recall": 0.1038961038961039,
+            "f1-score": 0.16161616161616163,
+            "support": 77.0
+          },
+          "STABIL": {
+            "precision": 0.3037974683544304,
+            "recall": 0.48,
+            "f1-score": 0.37209302325581395,
+            "support": 50.0
+          },
+          "TURUN": {
+            "precision": 0.2692307692307692,
+            "recall": 0.40384615384615385,
+            "f1-score": 0.3230769230769231,
+            "support": 52.0
+          },
+          "accuracy": 0.29608938547486036,
+          "macro avg": {
+            "precision": 0.31222153374052103,
+            "recall": 0.32924741924741924,
+            "f1-score": 0.2855953693162996,
+            "support": 179.0
+          },
+          "weighted avg": {
+            "precision": 0.3194964995403437,
+            "recall": 0.29608938547486036,
+            "f1-score": 0.26731338328064325,
+            "support": 179.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            8,
+            33,
+            36
+          ],
+          [
+            5,
+            24,
+            21
+          ],
+          [
+            9,
+            22,
+            21
+          ]
+        ],
+        "kappa": -0.0095
+      }
+    },
+    "Baseline NLP + LDA topics": {
+      "val": {
+        "accuracy": 0.3729,
+        "balanced_accuracy": 0.3709,
+        "macro_f1": 0.3709,
+        "classification_report": {
+          "NAIK": {
+            "precision": 0.46551724137931033,
+            "recall": 0.391304347826087,
+            "f1-score": 0.4251968503937008,
+            "support": 69.0
+          },
+          "STABIL": {
+            "precision": 0.3088235294117647,
+            "recall": 0.38181818181818183,
+            "f1-score": 0.34146341463414637,
+            "support": 55.0
+          },
+          "TURUN": {
+            "precision": 0.35294117647058826,
+            "recall": 0.33962264150943394,
+            "f1-score": 0.34615384615384615,
+            "support": 53.0
+          },
+          "accuracy": 0.3728813559322034,
+          "macro avg": {
+            "precision": 0.3757606490872211,
+            "recall": 0.37091505705123423,
+            "f1-score": 0.37093803706056444,
+            "support": 177.0
+          },
+          "weighted avg": {
+            "precision": 0.38311788771616184,
+            "recall": 0.3728813559322034,
+            "f1-score": 0.3755097419672161,
+            "support": 177.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            27,
+            27,
+            15
+          ],
+          [
+            16,
+            21,
+            18
+          ],
+          [
+            15,
+            20,
+            18
+          ]
+        ],
+        "kappa": 0.0592
+      },
+      "test": {
+        "accuracy": 0.2905,
+        "balanced_accuracy": 0.3054,
+        "macro_f1": 0.2911,
+        "classification_report": {
+          "NAIK": {
+            "precision": 0.35555555555555557,
+            "recall": 0.2077922077922078,
+            "f1-score": 0.26229508196721313,
+            "support": 77.0
+          },
+          "STABIL": {
+            "precision": 0.31343283582089554,
+            "recall": 0.42,
+            "f1-score": 0.358974358974359,
+            "support": 50.0
+          },
+          "TURUN": {
+            "precision": 0.22388059701492538,
+            "recall": 0.28846153846153844,
+            "f1-score": 0.25210084033613445,
+            "support": 52.0
+          },
+          "accuracy": 0.2905027932960894,
+          "macro avg": {
+            "precision": 0.29762299613045884,
+            "recall": 0.3054179154179154,
+            "f1-score": 0.29112342709256883,
+            "support": 179.0
+          },
+          "weighted avg": {
+            "precision": 0.3055374894614451,
+            "recall": 0.2905027932960894,
+            "f1-score": 0.286339010936717,
+            "support": 179.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            16,
+            27,
+            34
+          ],
+          [
+            11,
+            21,
+            18
+          ],
+          [
+            18,
+            19,
+            15
+          ]
+        ],
+        "kappa": -0.0456
+      }
+    }
+  },
+  "regression": {
+    "Baseline NLP": {
+      "val": {
+        "rmse": 55.8495,
+        "mae": 41.08,
+        "mape": 0.2492,
+        "skill_vs_naive": 0.0029,
+        "directional_hit": 0.5085
+      },
+      "test": {
+        "rmse": 50.7325,
+        "mae": 37.872,
+        "mape": 0.2174,
+        "skill_vs_naive": 0.0076,
+        "directional_hit": 0.5978
+      }
+    },
+    "Baseline NLP + LDA topics": {
+      "val": {
+        "rmse": 55.6648,
+        "mae": 40.6438,
+        "mape": 0.2466,
+        "skill_vs_naive": 0.0062,
+        "directional_hit": 0.5367
+      },
+      "test": {
+        "rmse": 50.9737,
+        "mae": 38.1819,
+        "mape": 0.2192,
+        "skill_vs_naive": 0.0029,
+        "directional_hit": 0.5419
+      }
+    }
+  },
+  "rmse_naive_same_rows": {
+    "val": 56.0099,
+    "test": 51.1231
+  },
+  "artifacts": {
+    "lda_model": "/home/ajipratama53/Projects/nlp-trio-bertiga/data/features/artifacts/lda_geopolitical_topics.joblib",
+    "article_topics": "/home/ajipratama53/Projects/nlp-trio-bertiga/data/feature_extracted/10_lda_topics_article_topics.csv",
+    "daily_topic_features": "/home/ajipratama53/Projects/nlp-trio-bertiga/data/feature_extracted/10_lda_topics_daily_features.csv",
+    "topic_count_selection": "/home/ajipratama53/Projects/nlp-trio-bertiga/results/10_lda_topics_topic_counts.csv",
+    "topic_terms": "/home/ajipratama53/Projects/nlp-trio-bertiga/results/10_lda_topics_topic_terms.csv",
+    "comparison": "/home/ajipratama53/Projects/nlp-trio-bertiga/results/10_lda_topics_comparison.csv"
+  }
+}

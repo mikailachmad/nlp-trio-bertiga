@@ -1,0 +1,178 @@
+{
+  "model": "XGBoost Word2Vec NLP-only (tanpa fitur time-series)",
+  "embedding": {
+    "algorithm": "Word2Vec Skip-gram with Negative Sampling (SGNS)",
+    "vector_size": 100,
+    "window": 5,
+    "min_count": 2,
+    "epochs": 5,
+    "training_articles": 2431,
+    "vocabulary_size": 23410,
+    "aggregation": "mean pooling per trading_date"
+  },
+  "features": {
+    "lexicon": [
+      "vader_title_mean",
+      "vader_body_mean",
+      "vader_body_min",
+      "vader_neg_share",
+      "lm_negative_mean",
+      "lm_positive_mean",
+      "lm_uncertainty_mean",
+      "lm_litigious_mean",
+      "lm_constraining_mean",
+      "lm_net_mean",
+      "no_news"
+    ],
+    "word2vec_dimensions": 100
+  },
+  "target": {
+    "classification": "target (NAIK/STABIL/TURUN, threshold 0.10%)",
+    "regression": "kurs_besok (dilatih pada selisih, dikonversi ke level)"
+  },
+  "best_iteration": {
+    "clf": 1,
+    "reg": 52
+  },
+  "classification": {
+    "val": {
+      "accuracy": 0.3051,
+      "balanced_accuracy": 0.316,
+      "macro_f1": 0.2815,
+      "classification_report": {
+        "NAIK": {
+          "precision": 0.4074074074074074,
+          "recall": 0.15942028985507245,
+          "f1-score": 0.22916666666666666,
+          "support": 69.0
+        },
+        "STABIL": {
+          "precision": 0.30275229357798167,
+          "recall": 0.6,
+          "f1-score": 0.4024390243902439,
+          "support": 55.0
+        },
+        "TURUN": {
+          "precision": 0.24390243902439024,
+          "recall": 0.18867924528301888,
+          "f1-score": 0.2127659574468085,
+          "support": 53.0
+        },
+        "accuracy": 0.3050847457627119,
+        "macro avg": {
+          "precision": 0.3180207133365931,
+          "recall": 0.31603317837936373,
+          "f1-score": 0.28145721616790637,
+          "support": 177.0
+        },
+        "weighted avg": {
+          "precision": 0.32592834195589143,
+          "recall": 0.3050847457627119,
+          "f1-score": 0.2780974129160693,
+          "support": 177.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          11,
+          43,
+          15
+        ],
+        [
+          6,
+          33,
+          16
+        ],
+        [
+          10,
+          33,
+          10
+        ]
+      ],
+      "kappa": -0.0222
+    },
+    "test": {
+      "accuracy": 0.3128,
+      "balanced_accuracy": 0.351,
+      "macro_f1": 0.2964,
+      "classification_report": {
+        "NAIK": {
+          "precision": 0.36363636363636365,
+          "recall": 0.1038961038961039,
+          "f1-score": 0.16161616161616163,
+          "support": 77.0
+        },
+        "STABIL": {
+          "precision": 0.265625,
+          "recall": 0.68,
+          "f1-score": 0.38202247191011235,
+          "support": 50.0
+        },
+        "TURUN": {
+          "precision": 0.4827586206896552,
+          "recall": 0.2692307692307692,
+          "f1-score": 0.345679012345679,
+          "support": 52.0
+        },
+        "accuracy": 0.3128491620111732,
+        "macro avg": {
+          "precision": 0.37067332810867293,
+          "recall": 0.35104229104229107,
+          "f1-score": 0.296439215290651,
+          "support": 179.0
+        },
+        "weighted avg": {
+          "precision": 0.37086423617800035,
+          "recall": 0.3128491620111732,
+          "f1-score": 0.276652942357125,
+          "support": 179.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          8,
+          60,
+          9
+        ],
+        [
+          10,
+          34,
+          6
+        ],
+        [
+          4,
+          34,
+          14
+        ]
+      ],
+      "kappa": 0.0188
+    }
+  },
+  "regression": {
+    "val": {
+      "rmse": 55.6575,
+      "mae": 40.7985,
+      "mape": 0.2475,
+      "skill_vs_naive": 0.0063,
+      "directional_hit": 0.5593
+    },
+    "test": {
+      "rmse": 50.7835,
+      "mae": 37.9551,
+      "mape": 0.2179,
+      "skill_vs_naive": 0.0066,
+      "directional_hit": 0.5922
+    }
+  },
+  "rmse_naive_same_rows": {
+    "val": 56.0099,
+    "test": 51.1231
+  },
+  "artifacts": {
+    "embedding_model": "data/features/artifacts/word2vec_sgns.npz",
+    "daily_features": "/home/ajipratama53/Projects/nlp-trio-bertiga/data/feature_extracted/07_word2vec_daily_features.csv",
+    "comparison": "/home/ajipratama53/Projects/nlp-trio-bertiga/results/07_word2vec_comparison.csv",
+    "results": "/home/ajipratama53/Projects/nlp-trio-bertiga/results/07_word2vec_results.json",
+    "confusion_matrix": "/home/ajipratama53/Projects/nlp-trio-bertiga/results/07_word2vec_confusion_matrix.png"
+  }
+}

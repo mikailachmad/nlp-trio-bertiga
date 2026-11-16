@@ -1,0 +1,195 @@
+{
+  "model": "XGBoost GloVe NLP-only (tanpa fitur time-series)",
+  "embedding": {
+    "algorithm": "Stanford GloVe 6B 100d",
+    "vector_size": 100,
+    "training": "pretrained, tidak di-fit ulang pada split proyek",
+    "aggregation": "mean pooling per trading_date",
+    "oov": "diabaikan; hari tanpa token dikenal memakai vektor nol",
+    "vocabulary_size": 12,
+    "coverage": {
+      "train": {
+        "tokens_total": 1020029,
+        "tokens_in_vocabulary": 59887,
+        "token_coverage": 0.058711,
+        "days_without_known_tokens": 115
+      },
+      "val": {
+        "tokens_total": 414862,
+        "tokens_in_vocabulary": 27168,
+        "token_coverage": 0.065487,
+        "days_without_known_tokens": 15
+      },
+      "test": {
+        "tokens_total": 408279,
+        "tokens_in_vocabulary": 24456,
+        "token_coverage": 0.0599,
+        "days_without_known_tokens": 7
+      }
+    }
+  },
+  "features": {
+    "lexicon": [
+      "vader_title_mean",
+      "vader_body_mean",
+      "vader_body_min",
+      "vader_neg_share",
+      "lm_negative_mean",
+      "lm_positive_mean",
+      "lm_uncertainty_mean",
+      "lm_litigious_mean",
+      "lm_constraining_mean",
+      "lm_net_mean",
+      "no_news"
+    ],
+    "glove_dimensions": 100
+  },
+  "target": {
+    "classification": "target (NAIK/STABIL/TURUN, threshold 0.10%)",
+    "regression": "kurs_besok (dilatih pada selisih, dikonversi ke level)"
+  },
+  "best_iteration": {
+    "clf": 20,
+    "reg": 21
+  },
+  "classification": {
+    "val": {
+      "accuracy": 0.3333,
+      "balanced_accuracy": 0.3464,
+      "macro_f1": 0.3278,
+      "classification_report": {
+        "NAIK": {
+          "precision": 0.43333333333333335,
+          "recall": 0.18840579710144928,
+          "f1-score": 0.26262626262626265,
+          "support": 69.0
+        },
+        "STABIL": {
+          "precision": 0.3048780487804878,
+          "recall": 0.45454545454545453,
+          "f1-score": 0.36496350364963503,
+          "support": 55.0
+        },
+        "TURUN": {
+          "precision": 0.3230769230769231,
+          "recall": 0.39622641509433965,
+          "f1-score": 0.3559322033898305,
+          "support": 53.0
+        },
+        "accuracy": 0.3333333333333333,
+        "macro avg": {
+          "precision": 0.35376276839691473,
+          "recall": 0.34639255558041454,
+          "f1-score": 0.32784065655524275,
+          "support": 177.0
+        },
+        "weighted avg": {
+          "precision": 0.36040321811301557,
+          "recall": 0.3333333333333333,
+          "f1-score": 0.32236503729719246,
+          "support": 177.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          13,
+          31,
+          25
+        ],
+        [
+          11,
+          25,
+          19
+        ],
+        [
+          6,
+          26,
+          21
+        ]
+      ],
+      "kappa": 0.0196
+    },
+    "test": {
+      "accuracy": 0.2905,
+      "balanced_accuracy": 0.2893,
+      "macro_f1": 0.2763,
+      "classification_report": {
+        "NAIK": {
+          "precision": 0.4230769230769231,
+          "recall": 0.2857142857142857,
+          "f1-score": 0.34108527131782945,
+          "support": 77.0
+        },
+        "STABIL": {
+          "precision": 0.16666666666666666,
+          "recall": 0.14,
+          "f1-score": 0.15217391304347827,
+          "support": 50.0
+        },
+        "TURUN": {
+          "precision": 0.27058823529411763,
+          "recall": 0.4423076923076923,
+          "f1-score": 0.3357664233576642,
+          "support": 52.0
+        },
+        "accuracy": 0.2905027932960894,
+        "macro avg": {
+          "precision": 0.28677727501256917,
+          "recall": 0.28934065934065933,
+          "f1-score": 0.2763418692396573,
+          "support": 179.0
+        },
+        "weighted avg": {
+          "precision": 0.3071555566790532,
+          "recall": 0.2905027932960894,
+          "f1-score": 0.2867715952974599,
+          "support": 179.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          22,
+          19,
+          36
+        ],
+        [
+          17,
+          7,
+          26
+        ],
+        [
+          13,
+          16,
+          23
+        ]
+      ],
+      "kappa": -0.0565
+    }
+  },
+  "regression": {
+    "val": {
+      "rmse": 55.7976,
+      "mae": 40.7871,
+      "mape": 0.2474,
+      "skill_vs_naive": 0.0038,
+      "directional_hit": 0.5085
+    },
+    "test": {
+      "rmse": 51.3681,
+      "mae": 38.369,
+      "mape": 0.2204,
+      "skill_vs_naive": -0.0048,
+      "directional_hit": 0.5419
+    }
+  },
+  "rmse_naive_same_rows": {
+    "val": 56.0099,
+    "test": 51.1231
+  },
+  "artifacts": {
+    "embedding_cache": "/tmp/glove-fixture-cache.npz",
+    "vector_source": "/tmp/glove-fixture-100d.txt",
+    "daily_features": "data/feature_extracted/09_glove_smoke_daily_features.csv",
+    "comparison": "results/09_glove_smoke_comparison.csv"
+  }
+}

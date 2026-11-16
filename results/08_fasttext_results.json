@@ -1,0 +1,182 @@
+{
+  "model": "XGBoost FastText NLP-only (tanpa fitur time-series)",
+  "embedding": {
+    "algorithm": "FastText Skip-gram with Negative Sampling (SGNS)",
+    "vector_size": 100,
+    "window": 5,
+    "min_count": 2,
+    "epochs": 5,
+    "bucket_count": 50000,
+    "character_ngrams": [
+      3,
+      6
+    ],
+    "training_articles": 2431,
+    "vocabulary_size": 23410,
+    "aggregation": "mean pooling per trading_date",
+    "oov": "character n-gram vectors"
+  },
+  "features": {
+    "lexicon": [
+      "vader_title_mean",
+      "vader_body_mean",
+      "vader_body_min",
+      "vader_neg_share",
+      "lm_negative_mean",
+      "lm_positive_mean",
+      "lm_uncertainty_mean",
+      "lm_litigious_mean",
+      "lm_constraining_mean",
+      "lm_net_mean",
+      "no_news"
+    ],
+    "fasttext_dimensions": 100
+  },
+  "target": {
+    "classification": "target (NAIK/STABIL/TURUN, threshold 0.10%)",
+    "regression": "kurs_besok (dilatih pada selisih, dikonversi ke level)"
+  },
+  "best_iteration": {
+    "clf": 32,
+    "reg": 0
+  },
+  "classification": {
+    "val": {
+      "accuracy": 0.3107,
+      "balanced_accuracy": 0.3244,
+      "macro_f1": 0.2947,
+      "classification_report": {
+        "NAIK": {
+          "precision": 0.38235294117647056,
+          "recall": 0.18840579710144928,
+          "f1-score": 0.2524271844660194,
+          "support": 69.0
+        },
+        "STABIL": {
+          "precision": 0.23404255319148937,
+          "recall": 0.2,
+          "f1-score": 0.21568627450980393,
+          "support": 55.0
+        },
+        "TURUN": {
+          "precision": 0.3229166666666667,
+          "recall": 0.5849056603773585,
+          "f1-score": 0.4161073825503356,
+          "support": 53.0
+        },
+        "accuracy": 0.3107344632768362,
+        "macro avg": {
+          "precision": 0.31310405367820887,
+          "recall": 0.3244371524929359,
+          "f1-score": 0.29474028050871964,
+          "support": 177.0
+        },
+        "weighted avg": {
+          "precision": 0.31847048983074416,
+          "recall": 0.3107344632768362,
+          "f1-score": 0.29002210226758385,
+          "support": 177.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          13,
+          25,
+          31
+        ],
+        [
+          10,
+          11,
+          34
+        ],
+        [
+          11,
+          11,
+          31
+        ]
+      ],
+      "kappa": -0.0133
+    },
+    "test": {
+      "accuracy": 0.324,
+      "balanced_accuracy": 0.3507,
+      "macro_f1": 0.3108,
+      "classification_report": {
+        "NAIK": {
+          "precision": 0.5,
+          "recall": 0.15584415584415584,
+          "f1-score": 0.2376237623762376,
+          "support": 77.0
+        },
+        "STABIL": {
+          "precision": 0.3,
+          "recall": 0.3,
+          "f1-score": 0.3,
+          "support": 50.0
+        },
+        "TURUN": {
+          "precision": 0.29523809523809524,
+          "recall": 0.5961538461538461,
+          "f1-score": 0.39490445859872614,
+          "support": 52.0
+        },
+        "accuracy": 0.3240223463687151,
+        "macro avg": {
+          "precision": 0.3650793650793651,
+          "recall": 0.3506660006660007,
+          "f1-score": 0.31084274032498793,
+          "support": 179.0
+        },
+        "weighted avg": {
+          "precision": 0.38465017291832937,
+          "recall": 0.3240223463687151,
+          "f1-score": 0.3007377740229277,
+          "support": 179.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          12,
+          18,
+          47
+        ],
+        [
+          8,
+          15,
+          27
+        ],
+        [
+          4,
+          17,
+          31
+        ]
+      ],
+      "kappa": 0.0258
+    }
+  },
+  "regression": {
+    "val": {
+      "rmse": 56.0726,
+      "mae": 40.7784,
+      "mape": 0.2474,
+      "skill_vs_naive": -0.0011,
+      "directional_hit": 0.5311
+    },
+    "test": {
+      "rmse": 50.9107,
+      "mae": 38.1887,
+      "mape": 0.2193,
+      "skill_vs_naive": 0.0042,
+      "directional_hit": 0.581
+    }
+  },
+  "rmse_naive_same_rows": {
+    "val": 56.0099,
+    "test": 51.1231
+  },
+  "artifacts": {
+    "embedding_model": "data/features/artifacts/fasttext_sgns.npz",
+    "daily_features": "/home/ajipratama53/Projects/nlp-trio-bertiga/data/feature_extracted/08_fasttext_daily_features.csv",
+    "comparison": "/home/ajipratama53/Projects/nlp-trio-bertiga/results/08_fasttext_comparison.csv"
+  }
+}

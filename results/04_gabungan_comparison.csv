@@ -1,11 +1,18 @@
 model,split,task,accuracy,balanced_accuracy,macro_f1,kappa,rmse,mae,mape,skill_vs_naive,directional_hit
-Naive Persistence of Direction,val,clf,0.3764,0.3695,0.3692,0.0577,,,,,
-Naive Majority-Class,val,clf,0.3876,0.3333,0.1862,0.0,,,,,
-Naive Persistence (Random Walk),val,reg,,,,,55.8789,40.7697,0.2473,0.0,
+Naive Persistence of Direction,val,clf,0.3785,0.3711,0.3713,0.0603,,,,,
+Naive Majority-Class,val,clf,0.3898,0.3333,0.187,0.0,,,,,
+Naive Persistence (Random Walk),val,reg,,,,,56.0099,40.8701,0.2479,0.0,
 Naive Persistence of Direction,test,clf,0.3687,0.3562,0.3562,0.0326,,,,,
 Naive Majority-Class,test,clf,0.4302,0.3333,0.2005,0.0,,,,,
 Naive Persistence (Random Walk),test,reg,,,,,51.1231,38.5419,0.2214,0.0,
+<<<<<<< HEAD
 XGBoost Gabungan (TS+NLP),val,clf,0.3315,0.3321,0.3287,-0.0056,,,,,
 XGBoost Gabungan (TS+NLP),test,clf,0.2626,0.263,0.2612,-0.1127,,,,,
 XGBoost Gabungan (TS+NLP),val,reg,,,,,55.862,40.6641,0.2467,0.0003,0.5281
 XGBoost Gabungan (TS+NLP),test,reg,,,,,50.9095,38.1646,0.2192,0.0042,0.581
+=======
+XGBoost Gabungan (TS+NLP),val,clf,0.4068,0.4054,0.4009,0.1046,,,,,
+XGBoost Gabungan (TS+NLP),test,clf,0.3017,0.2969,0.2938,-0.0571,,,,,
+XGBoost Gabungan (TS+NLP),val,reg,,,,,55.6733,40.8703,0.248,0.006,0.5424
+XGBoost Gabungan (TS+NLP),test,reg,,,,,50.82,37.853,0.2173,0.0059,0.5978
+>>>>>>> 89cd0bd42da67d39f7088f99483f7a6cb61e153c

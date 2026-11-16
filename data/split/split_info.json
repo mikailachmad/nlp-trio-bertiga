@@ -1,6 +1,7 @@
 {
   "train": {
     "start": "2021-09-08",
+<<<<<<< HEAD
     "end": "2025-02-19",
     "n_days": 837,
     "n_articles": 2924,
@@ -16,14 +17,29 @@
     "share_NAIK": 0.385,
     "share_STABIL": 0.313,
     "share_TURUN": 0.302
+=======
+    "end": "2025-02-18",
+    "n_days": 836,
+    "n_articles": 2434
+  },
+  "val": {
+    "start": "2025-02-20",
+    "end": "2025-11-20",
+    "n_days": 178,
+    "n_articles": 1007
+>>>>>>> 89cd0bd42da67d39f7088f99483f7a6cb61e153c
   },
   "test": {
     "start": "2025-11-24",
     "end": "2026-08-31",
     "n_days": 180,
+<<<<<<< HEAD
     "n_articles": 1193,
     "share_NAIK": 0.428,
     "share_STABIL": 0.278,
     "share_TURUN": 0.294
+=======
+    "n_articles": 1076
+>>>>>>> 89cd0bd42da67d39f7088f99483f7a6cb61e153c
   }
 }
