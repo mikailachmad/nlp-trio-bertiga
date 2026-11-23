@@ -444,9 +444,8 @@ evaluasi model klasifikasi/regresi dengan:
 python -m src.models.static_embeddings.word2vec_nlp_only
 ```
 
-Implementasi menggunakan Word2Vec Skip-gram with Negative Sampling (SGNS) berbasis
-NumPy agar bisa dijalankan pada environment proyek saat ini (Python 3.14); Gensim
-belum dapat dibangun pada versi Python tersebut.
+Implementasi eksperimen NLP-only yang sudah ada menggunakan Word2Vec Skip-gram
+with Negative Sampling (SGNS) berbasis NumPy.
 Script memakai `data/processed/articles_aligned.csv` sebagai sumber teks,
 `data/split/articles_split.csv` untuk label split artikel, dan
 `data/feature_extracted/model_dataset.csv` untuk target serta fitur leksikon.
@@ -462,6 +461,31 @@ perbandingan dengan naive baseline, serta confusion matrix disimpan di `results/
 Parameter training dan lokasi file dapat diubah lewat opsi CLI, misalnya
 `--vector-size 150 --window 7 --epochs 15`. Pastikan semua artefak split berasal
 dari proses yang sama agar pemetaan teks, tanggal, target, dan evaluasi tetap selaras.
+
+### Membangun ulang static embedding 1.000 dimensi
+
+Untuk melatih ulang Word2Vec dan FastText dengan Gensim serta GloVe 1.000d,
+jalankan:
+
+```bash
+python -m src.models.static_embeddings.gensim_1000d
+```
+
+Gensim menyediakan trainer Word2Vec dan FastText, tetapi tidak menyediakan
+trainer GloVe. Karena itu skrip menggunakan Mittens untuk melatih objective
+GloVe yang sebenarnya, bukan mengubah vektor pretrained 100d menjadi 1.000d.
+Semua embedding dilatih hanya dari artikel train. GloVe menggunakan vocabulary
+hingga 5.000 token untuk membatasi kebutuhan memori matriks co-occurrence.
+
+Model Gensim, matriks vektor `.npz`, dan ringkasan metrik coverage disimpan di
+`data/features/artifacts/static_embeddings_1000d/`; fitur mean-pooled per tanggal
+disimpan di `data/feature_extracted/static_embeddings_1000d/`. Lokasi keluaran,
+ukuran vocabulary GloVe, epoch, window, dan parameter lainnya dapat diatur lewat
+CLI `--help`. Hasil ini terpisah dari eksperimen 100d sebelumnya.
+
+Skrip menolak URL yang memiliki label split bertentangan dan mengecualikan baris
+sumber dengan label split atau tanggal tidak valid, serta mencetak jumlah baris
+yang dikecualikan. Periksa peringatan tersebut sebelum memakai hasil eksperimen.
    (scrape HTML → cleaning → `filter_news` → `preprocess_documents` → `data/processed/news_preprocessed.csv`),
    atau via CLI legacy:
 
