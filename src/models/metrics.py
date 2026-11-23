@@ -73,6 +73,7 @@ __all__ = [
     "evaluate_classifier",
     "evaluate_regression",
     "directional_hit_from_regression",
+    "save_predictions",
     "print_classifier",
     "print_regressor",
 ]
@@ -199,6 +200,59 @@ def directional_hit_from_regression(
     true = np.asarray(y_true_next, dtype=float)
     pred = np.asarray(y_pred_next, dtype=float)
     return round(float(np.mean(np.sign(pred - today) == np.sign(true - today))), 4)
+
+
+# Ekspor prediksi per-tanggal (untuk analisis error & korelasi)
+def save_predictions(
+    path,
+    *,
+    model: str,
+    date: Sequence,
+    split: Sequence[str],
+    y_true_clf: Sequence,
+    y_pred_clf: Sequence,
+    kurs_today: Sequence[float],
+    y_true_reg: Sequence[float],
+    y_pred_reg: Sequence[float],
+) -> "pd.DataFrame":
+    """Simpan prediksi per-tanggal ke CSV untuk analisis error & korelasi.
+
+    Format seragam lintas model (TS-only, early/late fusion) agar bisa
+    disandingkan per tanggal pada analisis Fase error/korelasi:
+    ``date, split, model, y_true_clf, y_pred_clf, correct_clf,
+    kurs_today, y_true_reg, y_pred_reg, err_reg, dir_true, dir_pred, dir_hit``.
+
+    ``dir_*`` adalah arah (tanda ``pred/aktual - kurs_hari_ini``) dari track
+    regresi, jembatan ke analisis "NLP menolong/merusak arah" per tanggal.
+    """
+    y_true_clf = np.asarray(y_true_clf)
+    y_pred_clf = np.asarray(y_pred_clf)
+    today = np.asarray(kurs_today, dtype=float)
+    yt = np.asarray(y_true_reg, dtype=float)
+    yp = np.asarray(y_pred_reg, dtype=float)
+    dir_true = np.sign(yt - today)
+    dir_pred = np.sign(yp - today)
+    df = pd.DataFrame(
+        {
+            "date": pd.to_datetime(pd.Series(date)).dt.strftime("%Y-%m-%d").to_numpy(),
+            "split": np.asarray(split),
+            "model": model,
+            "y_true_clf": y_true_clf,
+            "y_pred_clf": y_pred_clf,
+            "correct_clf": (y_true_clf == y_pred_clf).astype(int),
+            "kurs_today": today,
+            "y_true_reg": yt,
+            "y_pred_reg": yp,
+            "err_reg": yp - yt,
+            "dir_true": dir_true.astype(int),
+            "dir_pred": dir_pred.astype(int),
+            "dir_hit": (dir_true == dir_pred).astype(int),
+        }
+    )
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.round(6).to_csv(path, index=False)
+    return df
 
 
 # Pretty-print

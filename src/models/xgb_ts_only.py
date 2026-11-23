@@ -37,6 +37,7 @@ from src.models.metrics import (  # noqa: E402
     directional_hit_from_regression,
     evaluate_classifier,
     evaluate_regression,
+    save_predictions,
 )
 from src.models.naive_baseline import predict_majority, predict_persistence  # noqa: E402
 
@@ -199,6 +200,21 @@ def main(argv=None) -> int:
     res = pd.DataFrame(all_results)
     prefix = args.output_prefix
     res.round(6).to_csv(RESULTS_DIR / f"{prefix}_comparison.csv", index=False)
+
+    # Prediksi per-tanggal (val+test) untuk analisis error & korelasi
+    pred_frames = pd.concat([splits["val"], splits["test"]])
+    save_predictions(
+        RESULTS_DIR / f"{prefix}_predictions.csv",
+        model="XGBoost TS-only",
+        date=pred_frames["date"],
+        split=pred_frames["split"],
+        y_true_clf=np.concatenate([splits["val"]["target"].to_numpy(),
+                                   splits["test"]["target"].to_numpy()]),
+        y_pred_clf=np.concatenate([pred_clf["val"], pred_clf["test"]]),
+        kurs_today=np.concatenate([kurs_today["val"], kurs_today["test"]]),
+        y_true_reg=np.concatenate([y_reg["val"].to_numpy(), y_reg["test"].to_numpy()]),
+        y_pred_reg=np.concatenate([pred_reg["val"], pred_reg["test"]]),
+    )
 
     out = {
         "model": "XGBoost TS-only (tanpa NLP)",
