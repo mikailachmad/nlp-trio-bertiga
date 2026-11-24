@@ -4,32 +4,32 @@
   "split": "test",
   "n_dates": 179,
   "classification": {
-    "nlp_helped": 11,
+    "nlp_helped": 18,
     "nlp_hurt": 23,
     "both_correct": 43,
-    "both_wrong": 102,
-    "net_help": -12,
+    "both_wrong": 95,
+    "net_help": -5,
     "mcnemar": {
-      "p_value": 0.0576,
-      "n_discordant": 34,
+      "p_value": 0.5327,
+      "n_discordant": 41,
       "favored": "baseline (NLP merusak)"
     }
   },
   "regression": {
     "mae_base": 38.4611,
-    "mae_cand": 37.853,
+    "mae_cand": 38.1243,
     "dir_hit_base": 0.5028,
-    "dir_hit_cand": 0.5978,
-    "error_correlation": 0.9943,
-    "dates_cand_closer": 105,
-    "dates_base_closer": 74
+    "dir_hit_cand": 0.5866,
+    "error_correlation": 0.9941,
+    "dates_cand_closer": 90,
+    "dates_base_closer": 89
   },
   "nlp_signal_vs_direction_corr": {
-    "vader_title_mean": -0.0099,
-    "vader_body_mean": -0.0375,
-    "vader_neg_share": 0.0707,
-    "lm_negative_mean": 0.0861,
-    "lm_positive_mean": 0.0651,
-    "lm_net_mean": -0.0569
+    "vader_title_mean": -0.0004,
+    "vader_body_mean": -0.0153,
+    "vader_neg_share": 0.0545,
+    "lm_negative_mean": 0.0547,
+    "lm_positive_mean": 0.061,
+    "lm_net_mean": -0.0257
   }
 }
