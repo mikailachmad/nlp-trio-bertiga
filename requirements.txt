@@ -94,3 +94,5 @@ xgboost
 nbformat
 nbclient
 seaborn
+transformers
+torch

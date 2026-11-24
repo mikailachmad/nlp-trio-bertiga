@@ -148,7 +148,9 @@ def _init_nltk_resources() -> None:
             try:
                 nltk.download("wordnet", quiet=True)
                 nltk.download("omw-1.4", quiet=True)
-                _LEMMATIZER_INSTANCE = WordNetLemmatizer()
+                _candidate = WordNetLemmatizer()
+                _candidate.lemmatize("wars")  # verifikasi ulang: download() bisa gagal diam-diam
+                _LEMMATIZER_INSTANCE = _candidate
             except Exception:
                 _LEMMATIZER_INSTANCE = None
 
