@@ -334,7 +334,21 @@ hanya ditransformasi. Distribusi topik per artikel disimpan bersama topik
 dominan/confidence. Fitur harian adalah rata-rata probabilitas per artikel
 (bobot artikel sama). Perbandingan menguji baseline NLP yang ada (fitur leksikon
 + TF-IDF-SVD) terhadap baseline + topik LDA, menggunakan split kronologis dan
-XGBoost yang sama. Dataset lama tidak ditimpa.
+XGBoost yang sama. t-SNE memetakan distribusi topik harian pada data train yang
+memiliki berita; validation/test dan hari tanpa berita tidak digunakan untuk
+membentuk proyeksi. Hasilnya menampilkan topik dominan beserta kata teratas dan
+perbandingan volatilitas kurs. Dataset lama tidak ditimpa.
+
+Visualisasi dijalankan terpisah setelah fitur topik LDA tersedia:
+
+```bash
+python -m src.models.t_sne
+```
+
+Perintah ini membaca fitur topik harian, dataset kurs, dan kata teratas tiap
+topik yang sudah disimpan; proses LDA tidak dijalankan ulang. Path input/output
+dapat diubah lewat opsi `--daily-features`, `--model-dataset`, `--topic-terms`,
+dan `--results-dir`.
 
 Artefak default:
 
@@ -343,6 +357,9 @@ Artefak default:
 - Fitur topik harian: `data/feature_extracted/10_lda_topics_daily_features.csv`
 - Kandidat K dan kata kunci topik: `results/10_lda_topics_topic_counts.csv`,
   `results/10_lda_topics_topic_terms.csv`
+- Visualisasi t-SNE topik dan volatilitas: `results/10_lda_topics_tsne_topics.png`,
+  `results/10_lda_topics_tsne_volatility.png`; koordinat 2D:
+  `results/10_lda_topics_tsne_coordinates.csv`
 - Metrik baseline vs LDA: `results/10_lda_topics_comparison.csv` dan
   `results/10_lda_topics_results.json`
 
