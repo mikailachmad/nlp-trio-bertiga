@@ -131,15 +131,19 @@ FALLBACK_STOPWORDS: Set[str] = {
 
 _LEMMATIZER_INSTANCE: Optional[Any] = None
 _STOPWORDS_CACHE: Optional[Set[str]] = None
+# Sentinel terpisah dari None: begitu satu kali gagal (mis. WinError 17 saat
+# download di Windows/OneDrive), jangan coba unduh ulang di setiap dokumen —
+# cukup sekali per proses, lalu pakai fallback suffix-based di lemmatize_tokens.
+_LEMMATIZER_UNAVAILABLE: bool = False
 
 
 def _init_nltk_resources() -> None:
     """Inisialisasi lazy loader untuk NLTK Lemmatizer dan Stopwords."""
-    global _LEMMATIZER_INSTANCE, _STOPWORDS_CACHE
+    global _LEMMATIZER_INSTANCE, _STOPWORDS_CACHE, _LEMMATIZER_UNAVAILABLE
     if not _NLTK_AVAILABLE:
         return
 
-    if _LEMMATIZER_INSTANCE is None:
+    if _LEMMATIZER_INSTANCE is None and not _LEMMATIZER_UNAVAILABLE:
         try:
             _LEMMATIZER_INSTANCE = WordNetLemmatizer()
             # Test wordnet load
@@ -153,6 +157,7 @@ def _init_nltk_resources() -> None:
                 _LEMMATIZER_INSTANCE = _candidate
             except Exception:
                 _LEMMATIZER_INSTANCE = None
+                _LEMMATIZER_UNAVAILABLE = True  # jangan retry lagi di dokumen berikutnya
 
     if _STOPWORDS_CACHE is None:
         try:

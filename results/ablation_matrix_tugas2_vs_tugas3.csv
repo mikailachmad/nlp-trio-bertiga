@@ -1,0 +1,10 @@
+model,generasi,macro_f1,rmse,skill_vs_naive,directional_hit,kalahkan_naive_clf,kalahkan_naive_reg
+Naive Persistence of Direction,Baseline,0.3562,51.1231,0.0,,False,False
+Model A - TS-only (4 fitur),Tugas 2,0.3304,51.2676,-0.0028,0.5196,False,False
+Model B - TS + NLP dasar,Tugas 2,0.2976,50.8639,0.0051,0.5866,False,True
+"Gabungan TS+NLP (early, awal)",Tugas 2,0.3291,50.8875,0.0046,0.5866,False,True
+Model A+ - TS diperkaya + tuned,Tugas 3,0.3346,50.8071,0.0062,0.5754,False,True
+Model C - TS + Transformer,Tugas 3,0.3835,50.923,0.0039,0.581,True,True
+Model C+ - TS + NLP + Transformer,Tugas 3,0.3414,50.8751,0.0049,0.5866,False,True
+Fusion Early (TS+NLP),Tugas 3,0.3291,50.8875,0.0046,0.5866,False,True
+Fusion Late (TS+NLP),Tugas 3,0.3192,51.1995,-0.0015,0.514,False,False
